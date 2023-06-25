@@ -8,7 +8,14 @@ function openFile(){
 
 }
 function saveFile(){
-
+  const jsonData =  window.meta2d.data() // 获取数据 数据怎么来？怎么处理？
+  const json = JSON.stringify(jsonData)
+  const  file = new Blob([json],{type:"application/json"})
+  const link = URL.createObjectURL(file)
+  let a = document.createElement('a')
+  a.setAttribute("download","文件名")
+  a.setAttribute("href",link)
+  a.click()
 }
 function magnifier(){
 

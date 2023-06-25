@@ -1,0 +1,11 @@
+{
+  "name": "lemander",
+  "version": "1.0.0",
+  "description": "```js\r window.meta2d.open()\r ```\r 执行挂载到window身上的meta2d对象的open方法\r 方法内部细节：\r ```ts\r // mate2d.open\r   open(data?: Meta2dData, render: boolean = true) {\r     this.clear(false); // 执行清理函数 核心部分\r     if (data) { //判断是否为加载文件 \r         this.setBackgroundImage(data.bkImage); // 设置背景图片\r         Object.assign(this.store.data, data); // 将传入的数据 复制到meta2d的store中 此stroe由createstore创建\r         this.store.data.pens = []; // 将store中的图元初始化清空\r         // 第一遍赋初值  将传入的数据进行数据清洗 使得传入到store中的值符合标准\r         for (const pen of data.pens) {\r             if (!pen.id) { // 图元无id则赋值id\r                 pen.id = s8(); // 8位随机id\r             }\r             !pen.calculative && (pen.calculative = { canvas: this.canvas }); // 图元无calculatrive计算属性则赋值\r             this.store.pens[pen.id] = pen; // 存入到store中\r         }\r         for (const pen of data.pens) {\r             this.canvas.makePen(pen);\r         }\r     }\r     if (!render) {\r         this.canvas.opening = true;\r     }\r     this.initBindDatas(); // 绑定传入数据到store中\r     this.render();\r     this.listenSocket();\r     this.connectSocket();\r     this.startAnimate();\r     this.startVideo();\r     this.doInitJS();\r     this.store.emitter.emit('opened'); // 触发store事件",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "caihao",
+  "license": "ISC"
+}

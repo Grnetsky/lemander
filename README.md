@@ -160,7 +160,7 @@ async finishPencil() {
 // drawLine
 drawLine(lineName?: string) {
     lineName && lockedError(this.store);
-    this.canvas.drawingLineName = lineName;
+    this.canvas.drawingLineName = lineName; //在钢笔状态
 }
 ```
 
@@ -222,19 +222,312 @@ const ctx = this.magnifierScreen.getContext(
 ```
 ### 缩略图
 #### 实现方法
+在源代码中，该功能封装为ViewMap类，本质上是通过将父元素的canvas转为png，然后将其渲染到界面中
+```ts
+class ViewMap {
+    box: HTMLElement;
+    readonly boxWidth = 320;  // 定宽
+    readonly boxHeight = 180; // 定高
+    readonly ratio = this.boxWidth / this.boxHeight; // 定宽高比
+    readonly padding = 5; // 内边距
+    img: HTMLImageElement;
+    isShow: boolean;  // 展示
+    isDown: boolean;  //
+    view: HTMLElement; // 可视区域外框
+    constructor(public parent: Canvas) { // 父canvas图元
+        this.box = document.createElement('div'); // 创建缩略图区域
+        this.img = new Image(); // 该图片作用？
+        this.view = document.createElement('div'); // 创建可视区域
 
+        this.box.appendChild(this.img);
+        this.box.appendChild(this.view);
+        this.parent.externalElements.appendChild(this.box);// 将其添加到父元素的额外元素中
 
+        this.box.className = 'meta2d-map'; // 设置类名 绑定样式
+        // 绑定事件
+        this.box.onmousedown = this.onMouseDown;
+        this.box.onmousemove = this.onMouseMove;
+        this.box.onmouseup = this.onMouseUp;
+        // 绑定样式 在线
+        let sheet: any;
+        for (let i = 0; i < document.styleSheets.length; i++) {
+            if (document.styleSheets[i].title === 'le5le/map') {
+                sheet = document.styleSheets[i];
+            }
+        }
+        // 绑定样式 离线
+        if (!sheet) {
+            let style = document.createElement('style');
+            style.type = 'text/css';
+            style.title = 'le5le.com/map';
+            document.head.appendChild(style);
+
+            style = document.createElement('style');
+            style.type = 'text/css';
+            document.head.appendChild(style);
+            sheet = style.sheet;
+            sheet.insertRule(
+                `.meta2d-map{display:flex;width:${
+                    this.boxWidth + 2 * this.padding
+                }px;height:${this.boxHeight + 2 * this.padding}px;padding:${
+                    this.padding
+                }px;background:#f4f4f4;border:1px solid #ffffff;box-shadow: 0px 0px 14px 0px rgba(0,10,38,0.30);border-radius:8px;position:absolute;z-index:9999;right:0;bottom:0;justify-content:center;align-items:center;cursor:default;user-select:none;overflow: hidden;}`
+            );
+            sheet.insertRule(
+                '.meta2d-map img{max-width:100%;max-height:100%;pointer-events: none;}'
+            );
+            sheet.insertRule(
+                '.meta2d-map div{pointer-events: none;border:1px solid #1890ff;position:absolute}'
+            );
+        }
+    }
+    // 显示 本质通过将界面输出为图片的形式
+    show() {
+        this.box.style.display = 'flex';
+        // 数据来源
+        const data = this.parent.store.data;
+        if (data.pens.length) { // 若有图元
+            this.img.style.display = 'block';
+            this.img.src = this.parent.toPng(); // 将父元素canvas渲染为png图片
+            this.setView(); // 显示在界面上
+        } else {
+            this.img.style.display = 'none';  // 若无图元则不操作
+        }
+        this.isShow = true; // 设置show转态为true
+    }
+
+    hide() { // 隐藏缩略图
+        this.box.style.display = 'none';
+        this.isShow = false;
+    }
+    // ...
+}
+```
+#### 子功能
+##### 自动缩放 
+ 该功能主要是通过 setView方法来动态计算得出
+```ts
+setView() {
+    const data = this.parent.store.data; // 拿到父元素数据
+    if (data.pens.length) { // 查看是否有图元
+        const rect = getRect(data.pens); // 获取图元位置信息 涉及到最大值和最小值
+        // rect += data.x y 得到相对坐标
+        translateRect(rect, data.x, data.y);
+        const rectRatio = rect.width / rect.height; // 宽高比
+        if (rectRatio > this.ratio) {
+            // 上下留白，扩大高度
+            const height = rect.width / this.ratio;
+            rect.y -= (height - rect.height) / 2;
+            rect.height = height;
+            calcRightBottom(rect);
+        } else {
+            // 左右留白，扩大宽度
+            const width = rect.height * this.ratio;
+            rect.x -= (width - rect.width) / 2;
+            rect.width = width;
+            calcRightBottom(rect);
+        }
+        const canvasRect = this.parent.canvasRect;
+        let left = 0,
+            top = 0;
+        if (rect.x < 0) {
+            left = -rect.x / rect.width;
+        } else if (rect.x + rect.width > canvasRect.width) {
+            let space = 0;
+            if (canvasRect.width > rect.width) {
+                // 均已左上角为起点，这种场景需要剪掉一个留白
+                space = canvasRect.width - rect.width;
+            }
+            left = (-rect.x + space) / rect.width;
+        }
+
+        if (rect.y < 0) {
+            top = -rect.y / rect.height;
+        } else if (rect.y + rect.height > canvasRect.height) {
+            let space = 0;
+            if (canvasRect.height > rect.height) {
+                space = canvasRect.height - rect.height;
+            }
+            top = (-rect.y + space) / rect.height;
+        }
+
+        const width =
+            canvasRect.width > rect.width ? 1 : canvasRect.width / rect.width;
+        const height =
+            canvasRect.height > rect.height ? 1 : canvasRect.height / rect.height;
+        this.view.style.left = this.padding + left * this.boxWidth + 'px';
+        this.view.style.width = width * this.boxWidth + 'px';
+        this.view.style.top = this.padding + top * this.boxHeight + 'px';
+        this.view.style.height = height * this.boxHeight + 'px';
+    }
+}
+
+```
+##### 点击自动对齐视图（点哪儿哪儿位于中间）
+##### 视野同步移动
+通过监听mouseUp和，mouseMove事件来调用父元素的gotoView函数
+```ts
+   onMouseMove = (e: MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (this.isDown) {
+      try {
+        this.parent.gotoView(
+          e.offsetX / this.box.clientWidth,
+          e.offsetY / this.box.clientHeight
+        );
+      } catch (e) {
+        console.warn(e.message);
+        this.isDown = false;
+      }
+    }
+  };
+
+   onMouseUp = (e: MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    try {
+      this.parent.gotoView(
+        e.offsetX / this.box.clientWidth,
+        e.offsetY / this.box.clientHeight
+      );
+    } catch (e) {
+      console.warn(e.message);
+    } finally {
+      this.isDown = false;
+    }
+  };
+```
+gotoView函数内部细节
+```ts
+
+gotoView(x: number, y: number) { // x,  y 为偏移值
+    const rect = getRect(this.store.data.pens);
+    if (!isFinite(rect.width)) {
+        throw new Error('can not move view, because width is not finite');
+    }
+    this.store.data.x = this.canvas.clientWidth / 2 - x * rect.width - rect.x;
+    this.store.data.y = this.canvas.clientHeight / 2 - y * rect.height - rect.y;
+    this.onMovePens();     
+    this.canvasImage.init();
+    this.canvasImageBottom.init();
+    this.render(); //渲染界面
+}
+```
 ### 帮助
 #### 实现方法
 a链接 点击跳转制定帮助页面
 
 ## 左侧图标部分
-###
+常见的flex布局
 
 ## 画布部分
 ### 图元的放置
+通过监听图元的拖拽事件，将图源信息通过拖拽事件的dataTransfer转发给Meta2d对象
+```ts
+  ondrop = async (event: DragEvent) => { // 监听拖拽事件
+    console.log(event,66666)
+    if (this.store.data.locked) {
+      console.warn('canvas is locked, can not drop');
+      return;
+    }
+    try {
+      // TODO: 若画布锁定，阻止默认行为不再执行。在 firefox 上拖拽图片会打开新页
+      event.preventDefault();
+      event.stopPropagation();
+      const json =
+        event.dataTransfer.getData('Meta2d') ||
+        event.dataTransfer.getData('Text');
+      let obj = null;
+      console.log(json);
 
+      if (!json) {
+        const { files } = event.dataTransfer;
+        if (files.length && files[0].type.match('image.*')) {
+          // 必须是图片类型
+          const isGif = files[0].type === 'image/gif';
+          obj = await this.fileToPen(files[0], isGif);
+        }
+      }
+      !obj && (obj = JSON.parse(json));
+      obj = Array.isArray(obj) ? obj : [obj];
+      const pt = { x: event.offsetX, y: event.offsetY };
+      this.calibrateMouse(pt);
+      this.dropPens(obj, pt);
+    } catch (e) {}
+  };
+```
 ### 图元的拖拽，位置移动
+```ts
+  movePens(e: {
+    x: number;
+    y: number;
+    ctrlKey?: boolean;
+    shiftKey?: boolean;
+    altKey?: boolean;
+}) {
+    if (!this.activeRect || this.store.data.locked) {
+        return;
+    }
+
+    if (!this.initActiveRect) {
+        this.initActiveRect = deepClone(this.activeRect);
+        return;
+    }
+
+    if (
+        !this.store.options.moveConnectedLine &&
+        this.store.active.length === 1 &&
+        (this.store.active[0].anchors[0]?.connectTo ||
+            this.store.active[0].anchors[this.store.active[0].anchors.length - 1]
+                ?.connectTo)
+    ) {
+        return;
+    }
+
+    if (!this.movingPens) {
+        this.initMovingPens();
+        this.store.active.forEach((pen) => {
+            setHover(pen, false);
+        });
+        this.store.hover = undefined;
+    }
+    if (!this.mouseDown) {
+        return;
+    }
+
+    let x = e.x - this.mouseDown.x;
+    let y = e.y - this.mouseDown.y;
+    e.shiftKey && !e.ctrlKey && (y = 0);
+    e.ctrlKey && (x = 0);
+    const rect = deepClone(this.initActiveRect);
+    translateRect(rect, x, y);
+    const offset: Point = {
+        x: rect.x - this.activeRect.x,
+        y: rect.y - this.activeRect.y,
+    };
+    if (!this.store.options.disableDock) {
+        this.clearDock();
+        const moveDock = this.customMoveDock || calcMoveDock;
+        this.dock = moveDock(this.store, rect, this.movingPens, offset);
+        const { xDock, yDock } = this.dock;
+        let dockPen: Pen;
+        if (xDock) {
+            offset.x += xDock.step;
+            dockPen = this.store.pens[xDock.penId];
+            dockPen.calculative.isDock = true;
+        }
+        if (yDock) {
+            offset.y += yDock.step;
+            dockPen = this.store.pens[yDock.penId];
+            dockPen.calculative.isDock = true;
+        }
+    }
+
+    this.translatePens(this.movingPens, offset.x, offset.y, true);
+}
+```
 
 ### 图元的缩放
 
@@ -252,3 +545,8 @@ a链接 点击跳转制定帮助页面
 
 ### 图元的框选（多个）
 
+
+### 该项目的render函数？
+
+
+### 框选工具如何实现？
