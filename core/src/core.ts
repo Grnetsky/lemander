@@ -18,6 +18,9 @@ export class Meta2d {
     // this.initEventFns() // 初始化事件函数
     // this.store.emitter.on("*",this.onEvent)
   }
+  ondrop(e){
+    console.log(e)
+  }
 
   private setOptions(opts: Options = {}) {
     // this.store.options = Object.assign(this.store.options, opts); // 加载设置到数据仓库中
@@ -47,6 +50,7 @@ export class Meta2d {
 
    init(ele: HTMLElement | string, opts: Options) {
     if(typeof ele === 'string'){
+      // 创建canvas
       this.canvas = new Canvas(
         this,
         document.getElementById(ele),

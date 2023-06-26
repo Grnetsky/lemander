@@ -1,7 +1,10 @@
 <template>
   <Header></Header>
-  <Icons></Icons>
-  <Meta2d></Meta2d>
+  <div class="editor">
+    <Icons></Icons>
+    <Meta2d></Meta2d>
+  </div>
+
 </template>
 
 <script setup lang="js">
@@ -21,11 +24,22 @@ import Meta2d from "../../../vue/vue-lemander-example/src/components/Meta2d.vue"
   list-style: none;
 }
 
+html, body, #app {
+  width: 100%;
+  height: 100%;
+}
+.editor{
+  width: 100%;
+  height: calc(100% - 61px);
+  position: relative;
+}
 .nav {
   width: 100%;
   height: 61px;
-  border: 1px black solid;
-
+  box-shadow: 2px 2px 4px 2px #e1e1e1;
+  background-color: #f1f3f4;
+  z-index:999;
+  position: relative;
 }
 .nav ul {
   width: 100%;
@@ -41,5 +55,31 @@ import Meta2d from "../../../vue/vue-lemander-example/src/components/Meta2d.vue"
   border-radius: 4px;
   cursor: pointer;
 }
+.aside {
+  float: left;
+  width: 212px;
+  height: 100%;
+  border-right: 1px solid #ccc;
+  background-color: #f1f3f4;
+  z-index: 1;
+  position: relative;
+}
+.aside ul {
+  width: 100%;
+}
+#meta2d {
+  margin-left: 212px;
+  height: 100%;
+}
+.button {
+  user-select: none;
+}
+.button:hover {
+  background-color: #adadad;
+}
+.drag { cursor: move;
+}
 
 </style>
+
+

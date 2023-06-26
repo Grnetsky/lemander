@@ -29,12 +29,12 @@ function minimap(){
 <template>
   <div class="nav">
     <ul>
-      <li @click="newFile">新建文件</li>
-      <li @click="openFile">打开文件</li>
-      <li @click="saveFile">保存</li>
-      <li @click="magnifier">放大镜</li>
-      <li @click="minimap">缩略图</li>
-      <li>其他</li>
+      <li class="button" @click="newFile">新建文件</li>
+      <li class="button" @click="openFile">打开文件</li>
+      <li class="button" @click="saveFile">保存</li>
+      <li class="button" @click="magnifier">放大镜</li>
+      <li class="button" @click="minimap">缩略图</li>
+      <li class="button">其他</li>
     </ul>
   </div>
 </template>
