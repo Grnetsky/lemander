@@ -11,13 +11,12 @@ export class Canvas {
   parentElement:HTMLElement // 父元素
   width:number // 宽度
   height:number // 高度
-  store: Meta2dStore
   offscreenCanvas:HTMLCanvasElement
   magnifier: MagnifierCanvas
   constructor(
-    parent:Meta2d,
-    parentEle:HTMLElement,
-    store:Meta2dStore
+    public parent:Meta2d,
+    public parentEle:HTMLElement,
+    public store:Meta2dStore
   ) {
     this.parentElement = parentEle
     this.parentElement?.appendChild(this.canvas)
@@ -61,6 +60,7 @@ export class Canvas {
 
     for(let pen of pens){
       !pen.id && (pen.id = s8())  // 不存在id则赋值
+      console.log(this.store)
       this.store.pens[pen.id] = pen  // 将图元记录到数据仓库
     }
 

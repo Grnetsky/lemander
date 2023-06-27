@@ -35,27 +35,25 @@ export function UseStore(id = 'default'): Meta2dStore{
 
 function createStore(){ //
     // 创建仓库
-    return {
-        data:{
-            data: {
-                x: 0,
-                y: 0,
-                scale: 1,
-                pens: [],
-                origin: { x: 0, y: 0 },
-                center: { x: 0, y: 0 },
-                paths: {},
-            },
-            histories: [],// 步骤记录
-            pens: {},
-            path2dMap: new WeakMap(),
-            animateMap: new WeakMap(),
-            active: [],
-            animates: new Set(),
-            options: {},
-            emitter: mitt(),
-            bindDatas: {},
-        } as Meta2dStore
-    };
+    return{
+        data: {
+            x: 0,
+            y: 0,
+            scale: 1,
+            pens: [],
+            origin: { x: 0, y: 0 },
+            center: { x: 0, y: 0 },
+            paths: {},
+        },
+        histories: [],
+        pens: {},
+        path2dMap: new WeakMap(),
+        animateMap: new WeakMap(),
+        active: [],
+        animates: new Set(),
+        options: { },
+        emitter: mitt(),
+        bindDatas: {},
+    } as Meta2dStore; // as 断言
 
 }
