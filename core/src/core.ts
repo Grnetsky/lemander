@@ -1,5 +1,5 @@
 import {Canvas} from "./canvas";
-import {Meta2dStore, UseStore} from "./store";
+import {Meta2dData, Meta2dStore, UseStore} from "./store";
 import {Options} from "../options";
 import {s8} from "./utils/uuid";
 import {globalStore} from "./store/global";
@@ -8,7 +8,9 @@ export class Meta2d {
   canvas: Canvas
   store: Meta2dStore
   websocket:WebSocket
-  data(){return {"data":"hallo"}}
+  data():Meta2dData{
+    return {} as Meta2dData
+  }
   constructor(ele:HTMLElement | string,opts:Options = {}) {
     this.store = UseStore(s8()) // 使用数据仓库 有则加载 无则创建
     this.setOptions(opts); // 初始化设置

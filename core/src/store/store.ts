@@ -2,13 +2,26 @@ import {Pen} from "../pen";
 import {globalStore} from "./global";
 import {Options} from "../../options";
 import mitt, {Emitter} from "mitt";
+import {Point} from "../point";
 export interface Meta2dStore {
-    options:Options
-    data:Meta2dData
-    emitter:Emitter
+    options: Options
+    data: Meta2dData
+    emitter: Emitter,
+    pens:{
+        [key:string]: Pen
+    }
 }
 export interface Meta2dData {
-    pens: Pen[]
+    origin?: Point
+    pens?: Pen[]  // 图元
+    paths?: { [key:string] : string} // 图纸使用到的sbgPath
+    x?: number // x坐标
+    y?: number // y坐标
+    scale?: number // 缩放
+    width?: number
+    height?: number
+    // 标尺 暂不做
+
 }
 
 
@@ -33,7 +46,7 @@ function createStore(){ //
                 center: { x: 0, y: 0 },
                 paths: {},
             },
-            histories: [],
+            histories: [],// 步骤记录
             pens: {},
             path2dMap: new WeakMap(),
             animateMap: new WeakMap(),
@@ -42,7 +55,7 @@ function createStore(){ //
             options: {},
             emitter: mitt(),
             bindDatas: {},
-        } as Meta2dStore // as 断言
+        } as Meta2dStore
     };
 
 }

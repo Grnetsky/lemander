@@ -7,4 +7,5 @@ export interface Options {
   activeBackground?:string
   fromArrow?:string
   toArrow?:string
+  lineHeight?:number
 }

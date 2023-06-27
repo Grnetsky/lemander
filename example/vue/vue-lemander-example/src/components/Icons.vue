@@ -3,7 +3,7 @@ import search from "./search.vue"
 import listItem from "./listItem.vue"
 import {data} from "@/assets/icons";
 import {onMounted, ref} from "vue";
-let icons = data
+const icons = data
 let searchData = ref("")
 </script>
 

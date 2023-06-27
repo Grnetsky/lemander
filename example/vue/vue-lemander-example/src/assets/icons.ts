@@ -3,7 +3,7 @@ export const data = [
     title:"通用",
     data:[
       {
-        key: 'rect',
+        key: 'piaoquan',
         title: '矩形',
         data: {
           name: 'rectangle',
@@ -14,7 +14,7 @@ export const data = [
         },
       },
       {
-        key: 'circle',
+        key: 'luxian',
         title: '圆形',
         data: {
           name: 'circle',
@@ -31,7 +31,7 @@ export const data = [
         },
       },
       {
-        key: 'img',
+        key: 'shipin',
         title: '图片',
         data: {
           name: 'image',
@@ -42,7 +42,7 @@ export const data = [
         },
       },
       {
-        key: 'video',
+        key: 'rizhi',
         title: '视频',
         data: {
           name: 'video',
@@ -53,7 +53,7 @@ export const data = [
         },
       },
       {
-        key: 'audio',
+        key: 'moxing',
         title: '音频',
         data: {
           name: 'video',
@@ -107,7 +107,7 @@ export const data = [
     title:"基本",
     data:[
       {
-      key: 'rect',
+      key: 'rizhi',
       title: '矩形',
       data: {
         name: 'rectangle',
