@@ -3,7 +3,7 @@ export const data = [
     title:"通用",
     data:[
       {
-        key: 'piaoquan',
+        key: 'chizi',
         title: '矩形',
         data: {
           name: 'rectangle',

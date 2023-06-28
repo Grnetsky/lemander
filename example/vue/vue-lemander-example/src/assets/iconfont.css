@@ -1,8 +1,8 @@
 @font-face {
   font-family: "iconfont"; /* Project id 4140383 */
-  src: url('iconfont.woff2?t=1687848442253') format('woff2'),
-       url('iconfont.woff?t=1687848442253') format('woff'),
-       url('iconfont.ttf?t=1687848442253') format('truetype');
+  src: url('iconfont.woff2?t=1687939077099') format('woff2'),
+       url('iconfont.woff?t=1687939077099') format('woff'),
+       url('iconfont.ttf?t=1687939077099') format('truetype');
 }
 
 .iconfont {
@@ -11,6 +11,78 @@
   font-style: normal;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+.icon-baichui:before {
+  content: "\e6e3";
+}
+
+.icon-a-bitong1:before {
+  content: "\e6e4";
+}
+
+.icon-chizi:before {
+  content: "\e6e5";
+}
+
+.icon-gongwenbao:before {
+  content: "\e6e6";
+}
+
+.icon-bijiben:before {
+  content: "\e6e7";
+}
+
+.icon-jinpai:before {
+  content: "\e6e8";
+}
+
+.icon-daima:before {
+  content: "\e6e9";
+}
+
+.icon-huiyi:before {
+  content: "\e6ea";
+}
+
+.icon-bitong:before {
+  content: "\e6eb";
+}
+
+.icon-deng:before {
+  content: "\e6ec";
+}
+
+.icon-diqiuyi:before {
+  content: "\e6ed";
+}
+
+.icon-a-shu2:before {
+  content: "\e6ee";
+}
+
+.icon-diqiu:before {
+  content: "\e6ef";
+}
+
+.icon-chongdian:before {
+  content: "\e6f0";
+}
+
+.icon-fanyi:before {
+  content: "\e6f1";
+}
+
+.icon-shouji1:before {
+  content: "\e6f2";
+}
+
+.icon-jiangbei:before {
+  content: "\e6f3";
+}
+
+.icon-sousuo1:before {
+  content: "\e6f4";
 }
 
 .icon-luxian:before {

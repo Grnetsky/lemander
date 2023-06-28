@@ -5,6 +5,7 @@ import {data} from "@/assets/icons";
 import {onMounted, ref} from "vue";
 const icons = data
 let searchData = ref("")
+
 </script>
 
 <template>
