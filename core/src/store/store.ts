@@ -10,6 +10,7 @@ export interface Meta2dStore {
     pens:{
         [key:string]: Pen
     }
+    path2dMap: WeakMap<Pen, Path2D> // path2d hash表
 }
 export interface Meta2dData {
     origin?: Point
@@ -20,6 +21,7 @@ export interface Meta2dData {
     scale?: number // 缩放
     width?: number
     height?: number
+    color?: string
     // 标尺 暂不做
 
 }

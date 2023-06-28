@@ -5,14 +5,18 @@ import {Point} from "../point";
 import {Pen} from "../pen";
 import {s8} from "../utils/uuid";
 import {globalStore} from "../store/global";
+import {createOffScreen} from "./offscreen";
+import {getGlobalColor, renderPen} from "../pen/render"
 
 export class Canvas {
   canvas = document.createElement("canvas") // 创建canvas
   parentElement:HTMLElement // 父元素
   width:number // 宽度
   height:number // 高度
-  offscreenCanvas:HTMLCanvasElement
+  offscreen = createOffScreen() as HTMLCanvasElement
   magnifier: MagnifierCanvas
+  private lastRender: number;
+  private renderTimer: number;
   constructor(
     public parent:Meta2d,
     public parentEle:HTMLElement,
@@ -105,10 +109,45 @@ export class Canvas {
     if (!pen.lineHeight) {
       pen.lineHeight = lineHeight;
     }
-
+    // 锚点
     if(!pen.anchors && globalStore.anchors[pen.name]){
       !pen.anchors && (pen.anchors = [])
       globalStore.anchors[pen.name](pen)
+    }
+    this.updatePenRect(pen)
+  }
+  // 渲染图元矩形
+  private updatePenRect(pen: Pen) {
+
+  }
+
+
+  // 渲染原理  清屏>更新>渲染
+  render(){
+    let now = performance.now()
+    if(now -this.lastRender < this.store.options.interval){
+      if(this.renderTimer){
+        cancelAnimationFrame(this.renderTimer)
+      }
+      this.renderTimer = requestAnimationFrame(this.render) // 重绘
+      return
+    }
+    this.lastRender = now // 记录当前值
+    const offscreenCtx = this.offscreen.getContext('2d') // 离屏渲染层
+    offscreenCtx.clearRect(0,0,this.offscreen.width,this.offscreen.height)  // 清屏
+    offscreenCtx.save() // 保存当前状态
+    offscreenCtx.translate(this.store.data.x, this.store.data.y);  // TODO 为甚要移动渲染层？
+    this.renderPens() // 核心 渲染图元
+  }
+
+  // 绘制图元
+  private renderPens() {
+    const ctx =  this.offscreen.getContext('2d')
+    ctx.strokeStyle = getGlobalColor(this.store)
+    for (let pen of this.store.data.pens){
+      if(pen.calculative.inview){
+        renderPen(ctx,pen)
+      }
     }
   }
 }

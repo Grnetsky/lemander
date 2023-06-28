@@ -1,5 +1,6 @@
 // 定义图元基本信息
 import {Point} from "../point";
+import {Rect} from "../rect";
 
 export class Pen {
   name?: string
@@ -15,5 +16,17 @@ export class Pen {
   lineHeight?: number
   fontSize?: number
   anchors?: Point[]
-
+  calculative?:{
+    x:number
+    y:number
+    width?: number
+    height?: number
+    wordRect?: Rect
+    lineWidth?: number
+    rotate?: number
+    inview?: boolean
+  }
+  image?: string
+  locked?:number
+  children?: []
 }

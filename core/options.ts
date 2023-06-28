@@ -8,4 +8,5 @@ export interface Options {
   fromArrow?:string
   toArrow?:string
   lineHeight?:number
+  interval?: number
 }
