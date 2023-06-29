@@ -84,9 +84,14 @@ export class Canvas {
   // 添加图元
   private async addPens(pens: Pen[]) {
     // 该处可放生命周期
+    const list: Pen[] =[]
     for(let pen of pens){
       this.makePen(pen)
+      list.push(pen)
     }
+    // 渲染
+    this.render()
+    return list
   }
 
   private makePen(pen: Pen) {
@@ -145,9 +150,7 @@ export class Canvas {
     const ctx =  this.offscreen.getContext('2d')
     ctx.strokeStyle = getGlobalColor(this.store)
     for (let pen of this.store.data.pens){
-      if(pen.calculative.inview){
-        renderPen(ctx,pen)
-      }
+     renderPen(ctx,pen)
     }
   }
 }

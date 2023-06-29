@@ -22,16 +22,24 @@ function ctxRotate(ctx: CanvasRenderingContext2D, pen: Pen) {
 
 }
 
-// 渲染图元
+// 渲染图元 TODO 核心
 export function renderPen(ctx: CanvasRenderingContext2D, pen: Pen) {
   ctx.save() // 保存状态
   ctx.translate(0.5, 0.5) // canvas 1像素容易模糊 偏移0.5让线不模糊 https://www.cnblogs.com/10manongit/p/12855766.html
   ctx.beginPath() // 开始路径
   ctxFlip(ctx, pen) //TODO 暂留 不知其作用 暂留
-
-  if (pen.calculative.rotate && pen.name !== 'line') {
+  if (pen.calculative?.rotate && pen.name !== 'line') {
     ctxRotate(ctx, pen);
   }
-  if (pen.calculative.lineWidth > 1) ctx.lineWidth = pen.calculative.lineWidth
+  if (pen.calculative?.lineWidth > 1) ctx.lineWidth = pen.calculative?.lineWidth
+}
+export function ctxDrawPath(ctx: CanvasRenderingContext2D,
+                            pen: Pen,
+                            store: Meta2dStore,
+                            fill: boolean){
 
+}
+
+export function calcWorldRects(pen: Pen){
+  const store = pen.calculative.canvas.store
 }

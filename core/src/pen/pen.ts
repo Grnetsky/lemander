@@ -1,6 +1,7 @@
 // 定义图元基本信息
 import {Point} from "../point";
 import {Rect} from "../rect";
+import {Canvas} from "../canvas";
 
 export class Pen {
   name?: string
@@ -17,16 +18,18 @@ export class Pen {
   fontSize?: number
   anchors?: Point[]
   calculative?:{
-    x:number
-    y:number
+    x?:number
+    y?:number
+    canvas?: Canvas //这是？
     width?: number
     height?: number
     wordRect?: Rect
     lineWidth?: number
     rotate?: number
-    inview?: boolean
+    inView?: boolean
+    worldRect?: Rect;
   }
   image?: string
   locked?:number
-  children?: []
+  children?: string[]
 }

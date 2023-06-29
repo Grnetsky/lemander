@@ -1,42 +1,203 @@
 import { XMLParser } from "fast-xml-parser"; // https://github.com/NaturalIntelligence/fast-xml-parser
-import {Rect, Pen, s8} from "core"
-import {parseSvgPath} from "./parse";
+import {Rect, Pen, s8, } from "core"
+import {calcWorldPositions, parseSvgPath, SvgPath} from "./parse";
 const selfName = ':@';
 let anchorsArr = []
 let shapeScale: number; // 图形缩小比例
 let allRect: Rect
 const contentProp = '#text';
+import {getRect} from './parse'
 
-  // ？
+let style = undefined // 样式
+
 function setStyle(filter: any) {
   filter.forEach(()=>{
     if(filter.style && filter.style[0]){
-    let   style = cssToJson(filter.style[0][contentProp]);
+      style = cssToJson(filter.style[0][contentProp]);
     }
   })
 }
 
-function getRect(command: SvgPath) {
-  
+
+// 对标svg的transform属性，在此基础上偏移
+function getTranslate(transform:string) {
+  // 若无transform属性则设置为0
+  let offsetX = 0
+  let offsetY = 0
+  if(transform){
+    let matchArr = transform
+      .replace('translate(', '')
+      .replace(')', '')
+      .split(',');
+    offsetX = parseFloat(matchArr[0]);
+    offsetY = parseFloat(matchArr[1]);
+  }
+    return {
+      offsetX,
+      offsetY
+    }
 }
 
-// 根据path渲染
-function transformPath(path, pen: Pen | Pen[]) {
+// 根据path转换为Pen
+function transformPath(path: any, pen: any) {
   let d = path.d  // 获取命令
   if(!d)return
+  console.log("获取path",path)
   let command = parseSvgPath(d) // 根据path命令生成自有命令
-  console.log(command)
-  let rect = getRect(command)  //根据命令生成矩形
+  console.log("根据path生成的自有命令",command)
 
-  return undefined;
+  let rect = getRect(command)  // 根据命令生成矩形
+  console.log("根据命令生成的矩形",rect)
+  const { offsetX, offsetY } = getTranslate(path.transform) //根据svg的transform属性 获取偏移位置
+  rect.x += offsetX
+  rect.y += offsetY
+  rect.ex += offsetX
+  rect.ey += offsetY
+  const x = (rect.x + pen.x - allRect.x) / allRect.width
+  const y = (rect.y + pen.y - allRect.y) / allRect.height
+  const width =
+    rect.width / allRect.width <= 1 ? rect.width / allRect.width : 1
+  const height =
+    rect.height / allRect.height <= 1 ? rect.height / allRect.height : 1
+  const res =  {
+    ...pen,
+    name: 'svgPath',
+    pathId: s8(),
+    path: d,
+    x,
+    y,
+    width,
+    height,
+    disableAnchor: true,
+  };
+  console.log("transformPath最终输出",res)
+  return res
+
+}
+interface Gradient {
+  id: string; // 当前的 id 值
+  from: string; // 该渐变来自于哪个渐变 即 xlink:href 属性， 比 id 多一个 #
+  color: string; // 颜色，from 存在时，该值应该不存在
+}
+let linearGradient: Gradient[] = [];
+
+// 根据传入的类名 生成classStyle 样式对象
+function getClassStyle(
+className:string
+)
+{
+  const classStyle = {}
+  for(let key in style){
+    if(Object.prototype.hasOwnProperty.call(style,key)){ // key为style自身属性
+      const value = style[key]
+      if(key.includes(className)){
+        Object.assign(classStyle,value)
+      }
+    }
+  }
+  return classStyle
 }
 
+// 样式信息变为json数据 TODO 之前不是json数据吗？？？
+function styleToJson(style?: string) {
+  if (!style) {
+    return {};
+  }
+  const styleArr = style.split(';');
+  const json = {};
+  styleArr.forEach((item) => {
+    const [key, value] = item.split(':');
+    key && (json[key] = value);
+  });
+  return json;
+}
+
+// 转换为常规形状
 function transformNormalShape(
   childProperty: any,
   parentProperty,
   parentId: string
 ) {
-  return undefined;
+  const childClassJs = getClassStyle(childProperty.class)
+  const parentClassJs = getClassStyle(parentProperty.class)
+  const chileStyleJs = styleToJson(childProperty.style);
+  const parentStyleJs = styleToJson(parentProperty.style);
+  // 样式覆盖 最终样式
+  const finalProperty = {
+    ...parentProperty,
+    ...parentClassJs,
+    ...parentStyleJs,
+    ...childProperty,
+    ...childClassJs,
+    ...chileStyleJs,
+  };
+  let background;
+  if (finalProperty.fill === 'none') {
+  } else if (finalProperty.fill?.includes('url')) {
+    const id: string = finalProperty.fill.replace('url(#', '').replace(')', '');
+    let gradientColor = linearGradient.find((item) => item.id === id);
+    if (gradientColor && !gradientColor.color) {
+      // 颜色不存在，则查找父级
+      gradientColor = linearGradient.find(
+        (item) => gradientColor.from === `#${item.id}`
+      );
+    }
+    background = gradientColor?.color;
+  } else {
+    background = finalProperty.fill;
+    // fill 属性不是 none ，是 undefined ，用默认黑色
+    !background && (background = '#000');
+  }
+  let x = 0,
+    y = 0;
+  let rotate = 0;
+  if (finalProperty.transform) {
+    const transforms = finalProperty.transform.split(') ');
+    transforms.forEach((transform: string) => {
+      const [type, value] = transform.split('(');
+      const [offsetX, offsetY] = value.split(' ');
+      if (type === 'translate') {
+        // 平移
+        x = Number(offsetX) || 0;
+        y = Number(offsetY) || 0;
+      }
+      if (type === 'rotate') {
+        // TODO: transform 中的 rotate 圆心与 meta2d.js 圆心不一致，处理过程中默认把 translate 干掉
+        // 旋转
+        rotate = parseFloat(value);
+        x = 0;
+        y = 0;
+      }
+    });
+  }
+
+  return {
+    id: s8(),
+    locked: 10,
+    parentId,
+    x,
+    y,
+    rotate,
+    // TODO: background 可以为空
+    background: background,
+    color: finalProperty.stroke,
+    lineWidth: finalProperty['stroke-width']
+    ? parseFloat(finalProperty['stroke-width']) * shapeScale
+    : finalProperty.stroke
+      ? 1
+      : 0,
+    lineCap: finalProperty.strokeLinecap,
+    lineJoin: finalProperty.strokeLinejoin,
+    lineDash: finalProperty.strokeDasharray, // TODO: 可能不是数组类型
+    lineDashOffset: finalProperty.strokeDashoffset,
+    globalAlpha: Number(finalProperty.opacity),
+    fontSize: finalProperty['font-size']
+    ? parseFloat(finalProperty['font-size']) * shapeScale
+    : 16,
+    fontFamily: finalProperty['font-family'],
+    fontWeight: finalProperty['font-weight'],
+    fontStyle: finalProperty['font-style'],
+} as Pen;
 }
 
 // TODO 将多个children组合在一起  实现绑定 不完整
@@ -53,7 +214,7 @@ function transformCombines(selfProperty: any, children: any[]): Pen[] {
     height,
     children:[]
   }
-  pens.push(combinePen)
+  pens.push(combinePen) // 第一项为combinePen信息
   children.forEach(child =>{
     let pen: Pen | Pen[] = undefined
     const childProperty = child[selfName]
@@ -73,12 +234,11 @@ function transformCombines(selfProperty: any, children: any[]): Pen[] {
     }else if(child.style){
       setStyle({style: child.style})
     }else if(childProperty){
-      //
       pen = transformNormalShape(childProperty, selfProperty, combinePen.id)
-      // 根据不同类型进行渲染
+      // 根据不同类型进行渲染  暂时只完成path相关
       if(child.path){
+        console.log("transformPath输入",pen)
         pen = transformPath(childProperty, pen);
-
       }else if(child.rect){
 
       }else if(child.circle){
@@ -97,10 +257,28 @@ function transformCombines(selfProperty: any, children: any[]): Pen[] {
 
       }else if(child.image){
 
+      }else{
+        pen = undefined
+      }
+    }
+    // 将子元素记录到组合图元中
+    if(pen){
+      if (Array.isArray(pen)){
+        for(const pItem of pen){
+          if( !pItem.parentId ){
+            pItem.parentId = combinePen.id // 该pen无父级id则绑定为该组合id
+            combinePen.children.push(pItem.id) // 双向引用 记录子id
+          }
+        }
+        pens.push(...pen);
+      }else {
+        combinePen.children.push(pen.id);
+        pens.push(pen);
       }
     }
   })
-  return
+  console.log("transformCombines最终输出",pens)
+  return pens
 }
 
 // 解析svg 返回为图元
@@ -142,10 +320,12 @@ export function parseSvg(svg:string):Pen[]{
 
     let children = svg.svg
     console.log(children,"svgChildren")
-     transformCombines(selfProperty,children) // 将svg的多个子元素组合一起 组合为pen
-
+    const combinePens = transformCombines(selfProperty,children) // 将svg的多个子元素组合一起 组合为pen
+    pens.push(...combinePens) //
   })
-  return xmlJson
+  // setAnchor(pens[0])// TODO 设置锚点
+  console.log("parseSvg最终输出",pens)
+  return pens
 }
 
 function transformContainerRect(mySelf: any): Rect {

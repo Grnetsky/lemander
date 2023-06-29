@@ -2,7 +2,7 @@
 import {onMounted, ref, watch} from "vue";
 const status = ref(false)
 import {parseSvg} from "svg"
-defineProps(['listData'])
+const props = defineProps(['listData'])
 function dragStart(data,e){
   // 设置交互数据
   const json = JSON.stringify(data)
@@ -10,16 +10,22 @@ function dragStart(data,e){
 }
 // 解析svg为pens
 fetch("/下一曲.svg").then((data)=>data.text()).then((text)=>{
+  console.log(props.listData)
   console.log(text)
   const pens = parseSvg(text)
-
+  console.log(pens,"ppppppppppppppppppp")
+  props.listData.data.push({
+    svg: "/下一曲.svg",
+    title: "svg",
+    data: pens,
+  })
 })
 
 
 </script>
 <template>
   <div class="listItem">
-    <div class="title button"  @click="status = !status">
+    <div class="title button"  @click="status = !status" draggable="false">
       <i>></i>
       {{listData.title}}
     </div>
@@ -27,12 +33,12 @@ fetch("/下一曲.svg").then((data)=>data.text()).then((text)=>{
       <ul>
         <div class="list_item"  v-for="item in listData.data">
           <li v-if="item.key" draggable="true" @dragstart="dragStart(item.data,$event)" class="iconfont" :class="`icon-${item.key}`" :title="item.title"></li>
-          <img
-              v-else-if="item.svg"
+          <img  @dragstart="dragStart(item.data,$event)"
+                v-else-if="item.svg"
               :src="item.svg"
               alt=""
               srcset=""
-              class="img"
+              class="iconfont"
           />
         </div>
       </ul>
@@ -65,5 +71,8 @@ fetch("/下一曲.svg").then((data)=>data.text()).then((text)=>{
   ul .list_item:hover {
     background-color: rgba(0,0,0,.2);
   }
-
+img {
+  width: 25px;
+  user-select: none;
+}
 </style>
