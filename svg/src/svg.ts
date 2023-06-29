@@ -16,11 +16,16 @@ function setStyle(filter: any) {
   })
 }
 
+function getRect(command: SvgPath) {
+  
+}
+
 // 根据path渲染
 function transformPath(path, pen: Pen | Pen[]) {
   let d = path.d  // 获取命令
   if(!d)return
   let command = parseSvgPath(d) // 根据path命令生成自有命令
+  console.log(command)
   let rect = getRect(command)  //根据命令生成矩形
 
   return undefined;
