@@ -5,7 +5,6 @@ onMounted(()=>{})
 function newFile(e){
 }
 function openFile(){
-
 }
 function saveFile(){
   const jsonData =  window.meta2d.data() // 获取数据 数据怎么来？怎么处理？

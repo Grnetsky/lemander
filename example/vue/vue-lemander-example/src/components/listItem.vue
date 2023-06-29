@@ -23,7 +23,7 @@ fetch("/下一曲.svg").then((data)=>data.text()).then((text)=>{
       <i>></i>
       {{listData.title}}
     </div>
-    <div class="list"  :style="{height:status?'max-content':'0',overflow:'hidden'}">
+     <div class="list"  :style="{height:status?'max-content':'0',overflow:'hidden'}">
       <ul>
         <div class="list_item"  v-for="item in listData.data">
           <li v-if="item.key" draggable="true" @dragstart="dragStart(item.data,$event)" class="iconfont" :class="`icon-${item.key}`" :title="item.title"></li>
@@ -36,7 +36,7 @@ fetch("/下一曲.svg").then((data)=>data.text()).then((text)=>{
           />
         </div>
       </ul>
-    </div>
+       </div>
   </div>
 </template>
 
