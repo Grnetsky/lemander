@@ -10,3 +10,63 @@ export interface Rect { // 定义矩形
     rotate?: number; // 旋转角度
     center?: Point; // 中间点
 }
+
+
+/**
+ * 计算相对点 ，anchors 中的值都是百分比
+ * @param pt 绝对坐标
+ * @param worldRect 图形外接矩形
+ * @returns 相对坐标点
+ */
+export function calcRelativePoint(pt: Point, worldRect: Rect){
+
+    const { x, y, width, height } = worldRect;
+    const { penId, connectTo } = pt;
+    const point: Point = Object.assign({}, pt, {
+        x: width ? (pt.x - x) / width : 0,
+        y: height ? (pt.y - y) / height : 0,
+    });
+    if (pt.prev) {
+        point.prev = {
+            penId,
+            connectTo,
+            x: width ? (pt.prev.x - x) / width : 0,
+            y: height ? (pt.prev.y - y) / height : 0,
+        };
+    }
+    if (pt.next) {
+        point.next = {
+            penId,
+            connectTo,
+            x: width ? (pt.next.x - x) / width : 0,
+            y: height ? (pt.next.y - y) / height : 0,
+        };
+    }
+    return point;
+}
+
+// 计算图像右边框位置
+export function calcRightBottom(rect: Rect) {
+    rect.ex = rect.x + rect.width;
+    rect.ey = rect.y + rect.height;
+}
+
+// 计算图像中心点坐标
+export function calcCenter(rect: Rect) {
+    if (!rect.center) {
+        rect.center = {} as Point;
+    }
+    rect.center.x = rect.x + rect.width / 2;
+    rect.center.y = rect.y + rect.height / 2;
+}
+export function calcRelativeRect(rect, worldRect){
+    const relRect: Rect = {
+        x: (rect.x - worldRect.x) / worldRect.width,
+        y: (rect.y - worldRect.y) / worldRect.height,
+        width: rect.width / worldRect.width,
+        height: rect.height / worldRect.height,
+    };
+    calcRightBottom(relRect);
+    return relRect;
+
+}

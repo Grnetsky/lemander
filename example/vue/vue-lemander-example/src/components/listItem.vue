@@ -13,7 +13,6 @@ fetch("/下一曲.svg").then((data)=>data.text()).then((text)=>{
   console.log(props.listData)
   console.log(text)
   const pens = parseSvg(text)
-  console.log(pens,"ppppppppppppppppppp")
   props.listData.data.push({
     svg: "/下一曲.svg",
     title: "svg",

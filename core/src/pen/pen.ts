@@ -3,8 +3,11 @@ import {Point} from "../point";
 import {Rect} from "../rect";
 import {Canvas} from "../canvas";
 
-export class Pen {
+export interface Pen {
   name?: string
+  type?: string
+  prev?: Point
+  rotate: number // 旋转角度
   id?: string // 自身id
   parentId?: string // 父级id
   width?: number
@@ -28,8 +31,10 @@ export class Pen {
     rotate?: number
     inView?: boolean
     worldRect?: Rect;
+    singleton?: any
+    worldAnchors?: Point[]
   }
   image?: string
   locked?:number
-  children?: string[]
+  children?: string[]  // 里面放的是id信息
 }
