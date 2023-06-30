@@ -1,6 +1,7 @@
 import {Pen} from "./pen";
 import {Meta2dStore} from "../store";
 import {calcCenter, calcRelativeRect, calcRightBottom, Rect} from "../rect";
+import {globalStore} from "../store/global";
 
 // 获取全局色彩主题配置
 export function getGlobalColor(store: Meta2dStore) {
@@ -24,25 +25,25 @@ export function renderPen(ctx: CanvasRenderingContext2D, pen: Pen) {
   console.log(pen,"renderPen000000000000000")
   ctx.save() // 保存状态
   ctx.translate(0.5, 0.5) // canvas 1像素容易模糊 偏移0.5让线不模糊 https://www.cnblogs.com/10manongit/p/12855766.html
+  const store = pen.calculative.canvas.store;
 
   ctx.beginPath() // 开始路径
-  ctx.moveTo(0,0)
-  ctx.lineTo(100,100)
-  ctx.closePath()
+  ctxDrawPath(ctx, pen, store)
   ctx.stroke()
   ctxFlip(ctx, pen) //TODO 暂留 不知其作用 暂留
   if (pen.calculative?.rotate && pen.name !== 'line') {
     ctxRotate(ctx, pen);
   }
   if (pen.calculative?.lineWidth > 1) ctx.lineWidth = pen.calculative?.lineWidth
-  const store = pen.calculative.canvas.store;
 
 }
 export function ctxDrawPath(ctx: CanvasRenderingContext2D,
                             pen: Pen,
                             store: Meta2dStore,
-                            fill: boolean){
-
+                            ){
+  const path = globalStore.path2dDraws[pen.name];
+  console.log(path,"PATH------")
+  path(pen,ctx)
 }
 
 // TODO 暂留

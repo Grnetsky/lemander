@@ -27,6 +27,7 @@ export interface Pen {
     width?: number
     height?: number
     wordRect?: Rect
+    borderRadius?: number
     lineWidth?: number
     rotate?: number
     inView?: boolean

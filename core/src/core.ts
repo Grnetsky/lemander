@@ -3,6 +3,8 @@ import {Meta2dData, Meta2dStore, UseStore} from "./store";
 import {Options} from "../options";
 import {s8} from "./utils/uuid";
 import {globalStore} from "./store/global";
+import {Pen} from "./pen";
+import {commonPens} from "./diagrams";
 
 export class Meta2d {
   canvas: Canvas
@@ -17,6 +19,8 @@ export class Meta2d {
     this.setDataByOptions(opts)  // 从传入设置项中初始化数据
     this.init(ele,opts) // 初始化2
     globalThis.meta2d = this // 挂载到全局对象 window
+    this.register(commonPens())
+    // this.registerCanvasDraw()
     // this.initEventFns() // 初始化事件函数
     // this.store.emitter.on("*",this.onEvent)
   }
@@ -74,4 +78,20 @@ export class Meta2d {
   save(){
 
   }
+
+  // 在meta2dd身上注册相关图形
+  private register(path2dFns: {
+      [key:string]: (pen: Pen, ctx: CanvasRenderingContext2D)=> Path2D
+    }) {
+      Object.assign(globalStore.path2dDraws, path2dFns)
+    console.log(globalStore.path2dDraws,"gggggggggggggggggggggggggggggggggggggggg")
+    }
+
+  registerCanvasDraw(drawFns: {  //注册画布
+    [key: string]: (ctx: CanvasRenderingContext2D, pen: Pen) => void;
+  }) {
+    Object.assign(globalStore.canvasDraws, drawFns);
+  }
+
 }
+

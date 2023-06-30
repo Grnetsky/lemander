@@ -54,7 +54,7 @@ export class Canvas {
       clearTimeout(this.timer);
     }
     this.timer = setTimeout(() => {
-      this.resize();
+      // this.resize();
       this.timer = undefined;
     }, 100);
   };
@@ -125,7 +125,7 @@ export class Canvas {
       const paths = this.store.data.paths; //svgPath
       !paths[pen.pathId] && (paths[pen.pathId] = pen.path); //数据仓库中没有则添加
 
-      pen.path = undefined // TODO 为什么设为undefined？
+      // pen.path = undefined // TODO 为什么设为undefined？
     }
 
     // 设置pen的lineWidth
@@ -189,7 +189,6 @@ export class Canvas {
       })
     }
     // ...
-
   }
 
 
@@ -214,8 +213,6 @@ export class Canvas {
     const ctx = this.canvas.getContext('2d');
     ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     ctx.drawImage(this.offscreen, 0, 0, this.width, this.height);
-
-
   }
 
   // 绘制图元

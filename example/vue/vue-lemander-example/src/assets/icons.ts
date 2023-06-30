@@ -6,7 +6,7 @@ export const data = [
         key: 'chizi',
         title: '矩形',
         data: {
-          name: 'rectangle',
+          name: 'square',
           text: '矩形',
           width: 100,
           height: 100,
