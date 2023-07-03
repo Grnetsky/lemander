@@ -35,7 +35,7 @@ export function renderPen(ctx: CanvasRenderingContext2D, pen: Pen) {
     ctxRotate(ctx, pen);
   }
   if (pen.calculative?.lineWidth > 1) ctx.lineWidth = pen.calculative?.lineWidth
-
+  ctx.restore()
 }
 export function ctxDrawPath(ctx: CanvasRenderingContext2D,
                             pen: Pen,

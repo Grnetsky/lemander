@@ -18,6 +18,7 @@ fetch("/下一曲.svg").then((data)=>data.text()).then((text)=>{
     title: "svg",
     data: pens,
   })
+  console.log(pens,"svgsvg")
 })
 
 

@@ -194,6 +194,7 @@ export class Canvas {
 
   // 渲染原理  清屏>更新>渲染
   render(){
+    console.log("渲染")
     let now = performance.now()  // 获取现在时间
     if(now -this.lastRender < this.store.options.interval){ // 设置渲染频率
       if(this.renderTimer){
@@ -207,11 +208,15 @@ export class Canvas {
     offscreenCtx.clearRect(0,0,this.offscreen.width,this.offscreen.height)  // 清屏
     offscreenCtx.save() // 保存当前状态
     offscreenCtx.translate(this.store.data.x, this.store.data.y);  // TODO 为甚要移动渲染层？
+    console.log(this.store.data.x,this.store.data.y,"移动渲染层")
+    // 渲染部分
     this.renderPens() // 核心 渲染图元
+    offscreenCtx.restore();
 
     // 将隔离层图像渲染到显示层
     const ctx = this.canvas.getContext('2d');
     ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    console.log("清理成功")
     ctx.drawImage(this.offscreen, 0, 0, this.width, this.height);
   }
 
