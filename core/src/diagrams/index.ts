@@ -1,7 +1,12 @@
-export * from './square'
+
 import { square } from './square'
+import { circle } from "./circle";
+import { svgPath } from "./svgPath";
+
 export function commonPens (){
   return {
-    square
+    square,
+    circle,
+    svgPath
   }
 }

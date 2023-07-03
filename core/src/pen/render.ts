@@ -28,22 +28,31 @@ export function renderPen(ctx: CanvasRenderingContext2D, pen: Pen) {
   const store = pen.calculative.canvas.store;
 
   ctx.beginPath() // 开始路径
-  ctxDrawPath(ctx, pen, store)
+  ctxDrawPath(true,ctx, pen, store)
   ctx.stroke()
-  ctxFlip(ctx, pen) //TODO 暂留 不知其作用 暂留
+  ctxFlip(ctx, pen) //TODO 暂留 不知其作用 暂留  翻转
   if (pen.calculative?.rotate && pen.name !== 'line') {
     ctxRotate(ctx, pen);
   }
   if (pen.calculative?.lineWidth > 1) ctx.lineWidth = pen.calculative?.lineWidth
   ctx.restore()
 }
-export function ctxDrawPath(ctx: CanvasRenderingContext2D,
-                            pen: Pen,
-                            store: Meta2dStore,
-                            ){
-  const path = globalStore.path2dDraws[pen.name];
-  console.log(path,"PATH------")
-  path(pen,ctx)
+export function ctxDrawPath(
+  canUsePath = true,
+  ctx: CanvasRenderingContext2D,
+  pen: Pen,
+  store: Meta2dStore,
+  fill = false
+){
+  const path = canUsePath? store.path2dMap.get(pen) : globalStore.path2dDraws[pen.name]
+  if (path){
+    if(path instanceof Path2D){
+      fill && ctx.fill(path)
+      ctx.stroke(path)
+    }else {
+      path(pen,ctx)
+    }
+  }
 }
 
 // TODO 暂留

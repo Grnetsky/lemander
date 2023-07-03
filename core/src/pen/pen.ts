@@ -7,7 +7,7 @@ export interface Pen {
   name?: string
   type?: string
   prev?: Point
-  rotate: number // 旋转角度
+  rotate?: number // 旋转角度
   id?: string // 自身id
   parentId?: string // 父级id
   width?: number
@@ -33,7 +33,8 @@ export interface Pen {
     inView?: boolean
     worldRect?: Rect;
     singleton?: any
-    worldAnchors?: Point[]
+    worldAnchors?: Point[],
+    svgRect: Rect
   }
   image?: string
   locked?:number

@@ -19,6 +19,7 @@ export class Meta2d {
     this.setDataByOptions(opts)  // 从传入设置项中初始化数据
     this.init(ele,opts) // 初始化2
     globalThis.meta2d = this // 挂载到全局对象 window
+    // @ts-ignore
     this.register(commonPens())
     // this.registerCanvasDraw()
     // this.initEventFns() // 初始化事件函数
@@ -84,7 +85,6 @@ export class Meta2d {
       [key:string]: (pen: Pen, ctx: CanvasRenderingContext2D)=> Path2D
     }) {
       Object.assign(globalStore.path2dDraws, path2dFns)
-    console.log(globalStore.path2dDraws,"gggggggggggggggggggggggggggggggggggggggg")
     }
 
   registerCanvasDraw(drawFns: {  //注册画布

@@ -13,6 +13,7 @@ import {calcRelativePoint} from "../rect";
 export class Canvas {
   canvas = document.createElement("canvas") // 创建canvas
   parentElement:HTMLElement // 父元素
+  externalElements = document.createElement('div');  // 这个为外部聚焦框 可能不止一个子元素？ external：外部的
   width:number // 宽度
   height:number // 高度
   offscreen = createOffScreen() as HTMLCanvasElement
@@ -180,6 +181,7 @@ export class Canvas {
     //
     globalStore.path2dDraws[pen.name] &&
     this.store.path2dMap.set(pen, globalStore.path2dDraws[pen.name](pen));
+    console.log(this.store.path2dMap,"==========")
 
     //
     if(pen.children){
