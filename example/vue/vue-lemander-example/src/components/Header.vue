@@ -6,18 +6,18 @@ function newFile(e){
   window.meta2d.open()
 }
 async function openFile(){
-  try{
-    const [file] = await window.showOpenFilePicker()
-    const dataObj = await file.getFile()
-    const data = await dataObj.text()
-    console.log(data)
-    if(data){
-      const json = JSON.parse(data);
-      window.meta2d.open(json);
+    const file = await window.showOpenFilePicker().catch(()=>{
+      console.log("打开文件失败")
+      return
+    })
+    if(file){
+      const dataObj = await file[0].getFile()
+      const data = await dataObj.text()
+      if(data){
+        const json = JSON.parse(data);
+        window.meta2d.open(json);
+      }
     }
-  }catch (er){
-    console.log("打开文件识别")
-  }
 }
 function saveFile(){
   const jsonData =  window.meta2d.data() // 获取数据 数据怎么来？怎么处理？

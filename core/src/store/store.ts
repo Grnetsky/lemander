@@ -9,6 +9,7 @@ export interface Meta2dStore {
     emitter: Emitter,
     hover?: Pen
     hoverAnchor?: Point
+    center:Point
     pointAt?: Point
     dpiRatio?: number;
     historyIndex?:number

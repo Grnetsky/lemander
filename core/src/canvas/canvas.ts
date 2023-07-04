@@ -196,14 +196,18 @@ export class Canvas {
   ondrop =  (e)=>{
     e.preventDefault();
     // metaData
-    let metaData = JSON.parse(e.dataTransfer.getData('meta2d'))
-    metaData = Array.isArray(metaData)? metaData : [metaData]  // 转换为数组
-    console.log("metaData数据为",metaData)
-    const pt = { x:e.offsetX, y:e.offsetY } // 鼠标坐标
-    this.dropPens(metaData,pt) // 放置图元
+    try {
+      let metaData = JSON.parse(e.dataTransfer.getData('meta2d'))
+      metaData = Array.isArray(metaData)? metaData : [metaData]  // 转换为数组
+      console.log("metaData数据为",metaData)
+      const pt = { x:e.offsetX, y:e.offsetY } // 鼠标坐标
+      this.dropPens(metaData,pt) // 放置图元
+    }catch (err){
+      console.log("无法识别的元件")
+    }
   }
   // 初始化pen的calculative属性
-  private makePen(pen: Pen) {
+  makePen(pen: Pen) {
     !pen.id && (pen.id = s8())
     this.store.data.pens.push(pen) // Meta2dData 记录pens
     this.store.pens[pen.id] = pen // 在store中注册
@@ -427,7 +431,6 @@ export class Canvas {
     }
   ) => {
     // console.log("mousemove")
-    console.log(this.store.active)
     this.mousePos = {x:e.x, y:e.y};
     this.calibrateMouse(e)
     this.mousePos.x = e.x;

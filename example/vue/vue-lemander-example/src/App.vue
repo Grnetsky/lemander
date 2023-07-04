@@ -14,6 +14,9 @@ import Meta2d from "../../../vue/vue-lemander-example/src/components/Meta2d.vue"
 </script>
 
 <style>
+:root {
+  --list-width:212px
+}
 * {
   padding: 0;
   margin: 0;
@@ -57,18 +60,21 @@ html, body, #app {
 }
 .aside {
   float: left;
-  width: 212px;
+  width:  var(--list-width);
   height: 100%;
   border-right: 1px solid #ccc;
   background-color: #f1f3f4;
-  z-index: 1;
+  z-index: 888;
   position: relative;
 }
 .aside ul {
   width: 100%;
+  position: relative;
+  z-index:1;
 }
 #meta2d {
-  margin-left: 212px;
+  margin-left: calc(var(--list-width) + 16px);
+  position: relative;
   height: 100%;
 }
 .button {
