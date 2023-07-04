@@ -3,15 +3,20 @@ import { ref, onMounted, onUnmounted } from "vue";
 
 onMounted(()=>{})
 function newFile(e){
+  window.meta2d.open()
 }
 async function openFile(){
-  const [file] = await window.showOpenFilePicker()
-  const dataObj = await file.getFile()
-  const data = await dataObj.text()
-  console.log(data)
-  if(data){
-    const json = JSON.parse(data);
-    window.meta2d.open(json);
+  try{
+    const [file] = await window.showOpenFilePicker()
+    const dataObj = await file.getFile()
+    const data = await dataObj.text()
+    console.log(data)
+    if(data){
+      const json = JSON.parse(data);
+      window.meta2d.open(json);
+    }
+  }catch (er){
+    console.log("打开文件识别")
   }
 }
 function saveFile(){

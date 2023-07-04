@@ -11,7 +11,8 @@ export interface Meta2dStore {
     hoverAnchor?: Point
     pointAt?: Point
     dpiRatio?: number;
-
+    historyIndex?:number
+    histories?: []
     active?:Pen[]
     pens:{
         [key:string]: Pen
@@ -65,3 +66,22 @@ function createStore(){ //
     } as Meta2dStore; // as 断言
 
 }
+
+export const clearStore = (store: Meta2dStore) => {
+    store.data = {
+        x: 0,
+        y: 0,
+        scale: 1,
+        pens: [],
+        origin: { x: 0, y: 0 },
+        center: { x: 0, y: 0 },
+        paths: {},
+    };
+    store.pens = {};
+    store.histories = [];
+    store.historyIndex = null;
+    store.path2dMap = new WeakMap();
+    store.active = [];
+    store.hover = undefined;
+    store.lastHover = undefined;
+};

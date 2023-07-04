@@ -1,11 +1,11 @@
 import {Canvas} from "./canvas";
-import {Meta2dData, Meta2dStore, UseStore} from "./store";
+import {clearStore, Meta2dData, Meta2dStore, UseStore} from "./store";
 import {Options} from "../options";
 import {s8} from "./utils/uuid";
 import {globalStore} from "./store/global";
 import {Pen} from "./pen";
 import {commonPens} from "./diagrams";
-import {deepClone} from "../../../../Desktop/蔡豪/meta2d.js/packages/core/src/utils/clone";
+import {deepCopy} from "../../utils/deepCopy";
 
 export class Meta2d {
   canvas: Canvas
@@ -31,7 +31,7 @@ export class Meta2d {
     // this.store.options = Object.assign(this.store.options, opts); // 加载设置到数据仓库中
   }
   data(): Meta2dData {
-    const data: Meta2dData = deepClone(this.store.data); // 深拷贝 数据仓库中的数据
+    const data: Meta2dData = deepCopy(this.store.data); // 深拷贝 数据仓库中的数据
     const { pens, paths } = this.store.data;
     // TODO: 未在 delete 时清除，避免撤销等操作。
     // 清除一些未使用到的 paths
@@ -45,7 +45,8 @@ export class Meta2d {
     }
     return data;
   }
-  open(data){
+  open(data?){
+    this.clear()
     if (data) {
       Object.assign(this.store.data, data);
       this.store.data.pens = [];
@@ -62,7 +63,6 @@ export class Meta2d {
       }
     }
     this.render();
-
   }
 
   // 从传入设置项中初始化数据
@@ -126,6 +126,10 @@ export class Meta2d {
 
   private render() {
     this.canvas.render()
+  }
+  clear(){
+    clearStore(this.store);
+
   }
 }
 
