@@ -11,6 +11,7 @@ export interface Pen {
   id?: string // 自身id
   parentId?: string // 父级id
   width?: number
+  globalAlpha?: number // t透明度
   height?: number
   x?: number
   y?: number
@@ -34,7 +35,8 @@ export interface Pen {
     worldRect?: Rect;
     singleton?: any
     worldAnchors?: Point[],
-    svgRect: Rect
+    svgRect?: Rect
+    active?: boolean
   }
   image?: string
   locked?:number

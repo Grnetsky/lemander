@@ -70,3 +70,30 @@ export function calcRelativeRect(rect, worldRect){
     return relRect;
 
 }
+
+//
+export function pointInSimpleRect(pt: Point, rect: Rect, r = 0) {
+    const { x, y, ex, ey } = rect;
+    return pt.x >= x - r && pt.x <= ex + r && pt.y >= y - r && pt.y <= ey + r;
+}
+
+export function pointInRect(pt:Point,rect: Rect){
+    if(!rect)return
+    if(rect.ex == null)calcRightBottom(rect)
+    // 若图像没有旋转
+    if(!rect.rotate || rect.rotate % 360 === 0){
+        return pt.x >rect.x && pt.x<rect.ex && pt.y>rect.y && pt.y < rect.ey  // 判断核心
+    }
+    // 若图像已经旋转
+    if(!rect.center)calcCenter(rect)
+    const points = [
+        { x: rect.x, y: rect.y },
+        { x: rect.ex, y: rect.y },
+        { x: rect.ex, y: rect.ey },
+        { x: rect.x, y: rect.ey },
+    ]
+    points.forEach((item)=>{
+        rotatePoint(item,rect.rotate,rect.center)
+    })
+    return pointInVertices(pt,points)
+}

@@ -234,3 +234,14 @@ export interface SvgPath {
 }
 
 
+export function pathToString(path: SvgPath): string {
+  let text = '';
+
+  path.commands.forEach((item) => {
+    text += item.key + ' ';
+    item.values.forEach((num) => {
+      text += num + ' ';
+    });
+  });
+  return text;
+}

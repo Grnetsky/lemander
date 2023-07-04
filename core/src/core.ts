@@ -5,14 +5,12 @@ import {s8} from "./utils/uuid";
 import {globalStore} from "./store/global";
 import {Pen} from "./pen";
 import {commonPens} from "./diagrams";
+import {deepClone} from "../../../../Desktop/蔡豪/meta2d.js/packages/core/src/utils/clone";
 
 export class Meta2d {
   canvas: Canvas
   store: Meta2dStore
   websocket:WebSocket
-  data():Meta2dData{
-    return {} as Meta2dData
-  }
   constructor(ele:HTMLElement | string,opts:Options = {}) {
     this.store = UseStore(s8()) // 使用数据仓库 有则加载 无则创建
     this.setOptions(opts); // 初始化设置
@@ -32,7 +30,40 @@ export class Meta2d {
   private setOptions(opts: Options = {}) {
     // this.store.options = Object.assign(this.store.options, opts); // 加载设置到数据仓库中
   }
+  data(): Meta2dData {
+    const data: Meta2dData = deepClone(this.store.data); // 深拷贝 数据仓库中的数据
+    const { pens, paths } = this.store.data;
+    // TODO: 未在 delete 时清除，避免撤销等操作。
+    // 清除一些未使用到的 paths
+    data.paths = {}; // TODO path属性的作用？
+    for (const pathId in paths) {
+      if (Object.prototype.hasOwnProperty.call(paths, pathId)) {
+        if (pens.find((pen) => pen.pathId === pathId)) {
+          data.paths[pathId] = paths[pathId];
+        }
+      }
+    }
+    return data;
+  }
+  open(data){
+    if (data) {
+      Object.assign(this.store.data, data);
+      this.store.data.pens = [];
+      // 第一遍赋初值
+      for (const pen of data.pens) {
+        if (!pen.id) {
+          pen.id = s8();
+        }
+        !pen.calculative && (pen.calculative = { canvas: this.canvas });
+        this.store.pens[pen.id] = pen;
+      }
+      for (const pen of data.pens) {
+        this.canvas.makePen(pen);
+      }
+    }
+    this.render();
 
+  }
 
   // 从传入设置项中初始化数据
   private setDataByOptions(opts: Options = {}) {
@@ -93,5 +124,8 @@ export class Meta2d {
     Object.assign(globalStore.canvasDraws, drawFns);
   }
 
+  private render() {
+    this.canvas.render()
+  }
 }
 

@@ -7,6 +7,12 @@ export interface Meta2dStore {
     options: Options
     data: Meta2dData
     emitter: Emitter,
+    hover?: Pen
+    hoverAnchor?: Point
+    pointAt?: Point
+    dpiRatio?: number;
+
+    active?:Pen[]
     pens:{
         [key:string]: Pen
     }

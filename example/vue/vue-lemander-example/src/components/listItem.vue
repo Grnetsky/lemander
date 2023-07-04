@@ -10,15 +10,12 @@ function dragStart(data,e){
 }
 // 解析svg为pens
 fetch("/下一曲.svg").then((data)=>data.text()).then((text)=>{
-  console.log(props.listData)
-  console.log(text)
   const pens = parseSvg(text)
   props.listData.data.push({
     svg: "/下一曲.svg",
     title: "svg",
     data: pens,
   })
-  console.log(pens,"svgsvg")
 })
 
 

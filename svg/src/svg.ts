@@ -72,7 +72,6 @@ function transformPath(path: any, pen: any) {
   };
   console.log("transformPath最终输出",res)
   return res
-
 }
 interface Gradient {
   id: string; // 当前的 id 值
@@ -203,7 +202,7 @@ function transformNormalShape(
 // TODO 将多个children组合在一起  实现绑定 不完整
 function transformCombines(selfProperty: any, children: any[]): Pen[] {
   const pens:Pen[] =[]
-  const [width, height] = [selfProperty.width, selfProperty.height]
+  const [width, height] = dealUnit(selfProperty);
   const combinePen: Pen = {  // 声明图元
     id:s8(),
     name:"combine", //TODO 名字写死？
@@ -232,7 +231,7 @@ function transformCombines(selfProperty: any, children: any[]): Pen[] {
     if(child.defs){
       setStyle(child.defs.filter(item=> item.value))
     }else if(child.style){
-      setStyle({style: child.style})
+      setStyle([{style: child.style}])
     }else if(childProperty){
       pen = transformNormalShape(childProperty, selfProperty, combinePen.id)
       // 根据不同类型进行渲染  暂时只完成path相关
@@ -355,4 +354,17 @@ function cssToJson(text: string) {
     // key && (json[key] = styleToJson(value));
   });
   return json;
+}
+
+// 单位转换
+function dealUnit(selfProperty: any): [number, number] {
+  if (String(selfProperty.width)?.endsWith('in')) {
+    // 英寸
+    const width = parseFloat(selfProperty.width) * 96;
+    const height = parseFloat(selfProperty.height) * 96;
+    return [width, height];
+  }
+  const width = parseFloat(selfProperty.width) || 0;
+  const height = parseFloat(selfProperty.height) || 0;
+  return [width, height];
 }

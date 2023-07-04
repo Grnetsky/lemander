@@ -45,12 +45,15 @@ export function ctxDrawPath(
   fill = false
 ){
   const path = canUsePath? store.path2dMap.get(pen) : globalStore.path2dDraws[pen.name]
+
   if (path){
     if(path instanceof Path2D){
       fill && ctx.fill(path)
       ctx.stroke(path)
     }else {
       path(pen,ctx)
+      fill && ctx.fill();
+      ctx.restore();
     }
   }
 }
@@ -99,4 +102,33 @@ export function calcPenRect(pen: Pen) {
 // 计算图元是否在视图中 是否可见
 export function calcInView(pen:Pen){
   pen.calculative.inView = true
+}
+
+// 递归设置子图元为激活状态
+export function setChildrenActive(pen: Pen, active = true) {
+  if (!pen.children) {
+    return;
+  }
+  const store = pen.calculative.canvas.store;
+  pen.children.forEach((id) => {
+    const child: Pen = store.pens[id];
+    if (child) {
+      child.calculative.active = active;
+
+      setChildrenActive(child, active);
+    }
+  });
+}
+
+export function getParent(pen: Pen, root?: boolean): Pen {
+  if (!pen || !pen.parentId || !pen.calculative) {
+    return undefined;
+  }
+
+  const store = pen.calculative.canvas.store;
+  const parent = store.pens[pen.parentId];
+  if (!root) {
+    return parent;
+  }
+  return getParent(parent, root) || parent;
 }
