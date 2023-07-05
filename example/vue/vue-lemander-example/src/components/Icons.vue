@@ -25,6 +25,7 @@ function changeWidth(e){
       <listItem v-for="item in icons" :listData="item"></listItem>
     </li>
   </ul>
+<!--  <div class="l" draggable="false"  @mousedown="isActive = true" @mouseup="isActive = false" @mousemove="changeWidth">-->
   <div class="l" draggable="false"  @mousedown="isActive = true" @mouseup="isActive = false" @mousemove="changeWidth">
   </div>
 </div>

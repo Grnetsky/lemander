@@ -73,7 +73,7 @@ html, body, #app {
   z-index:1;
 }
 #meta2d {
-  margin-left: calc(var(--list-width) + 16px);
+  margin-left: var(--list-width);
   position: relative;
   height: 100%;
 }

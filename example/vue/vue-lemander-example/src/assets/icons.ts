@@ -34,7 +34,7 @@ export const data = [
         key: 'shipin',
         title: '图片',
         data: {
-          name: 'image',
+          name: 'triangle',
           width: 100,
           height: 100,
           image:
