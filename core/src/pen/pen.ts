@@ -3,7 +3,7 @@ import {Point} from "../point";
 import {Rect} from "../rect";
 import {Canvas} from "../canvas";
 
-export interface Pen {
+export interface Pen extends Rect{
   name?: string
   type?: string
   prev?: Point
@@ -19,6 +19,7 @@ export interface Pen {
   pathId?: string // path的唯一标识
   lineWidth?: number
   lineHeight?: number
+  newId?: string
   fontSize?: number
   anchors?: Point[]
   calculative?:{
@@ -37,6 +38,7 @@ export interface Pen {
     worldAnchors?: Point[],
     svgRect?: Rect
     active?: boolean
+    initRect?:Rect
   }
   image?: string
   locked?:number

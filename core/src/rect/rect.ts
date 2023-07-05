@@ -1,4 +1,5 @@
 import {Point} from "../point";
+import {Pen} from "../pen";
 
 export interface Rect { // 定义矩形
     x?: number; // 横坐标
@@ -82,6 +83,8 @@ export function pointInRect(pt:Point,rect: Rect){
     if(rect.ex == null)calcRightBottom(rect)
     // 若图像没有旋转
     if(!rect.rotate || rect.rotate % 360 === 0){
+        // console.log(pt.x,pt.y,rect.x,rect.ex,rect.y,rect.ey)
+
         return pt.x >rect.x && pt.x<rect.ex && pt.y>rect.y && pt.y < rect.ey  // 判断核心
     }
     // 若图像已经旋转
@@ -96,4 +99,15 @@ export function pointInRect(pt:Point,rect: Rect){
         rotatePoint(item,rect.rotate,rect.center)
     })
     return pointInVertices(pt,points)
+}
+export function translateRect(rect: Rect | Pen, x: number, y: number) {
+    rect.x += x;
+    rect.y += y;
+    rect.ex += x;
+    rect.ey += y;
+
+    if (rect.center) {
+        rect.center.x += x;
+        rect.center.y += y;
+    }
 }

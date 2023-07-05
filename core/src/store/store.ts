@@ -9,16 +9,16 @@ export interface Meta2dStore {
     emitter: Emitter,
     hover?: Pen
     hoverAnchor?: Point
-    center:Point
+    center?:Point
     pointAt?: Point
     dpiRatio?: number;
     historyIndex?:number
     histories?: []
     active?:Pen[]
-    pens:{
+    pens?:{
         [key:string]: Pen
     }
-    path2dMap: WeakMap<Pen, Path2D> // path2d hash表
+    path2dMap?: WeakMap<Pen, Path2D> // path2d hash表
 }
 export interface Meta2dData {
     origin?: Point
@@ -30,6 +30,7 @@ export interface Meta2dData {
     width?: number
     height?: number
     color?: string
+    center?: Point
     // 标尺 暂不做
 
 }
@@ -64,7 +65,7 @@ function createStore(){ //
         options: { },
         emitter: mitt(),
         bindDatas: {},
-    } as Meta2dStore; // as 断言
+    } ; // as 断言
 
 }
 
@@ -84,5 +85,5 @@ export const clearStore = (store: Meta2dStore) => {
     store.path2dMap = new WeakMap();
     store.active = [];
     store.hover = undefined;
-    store.lastHover = undefined;
+    // store.lastHover = undefined;
 };

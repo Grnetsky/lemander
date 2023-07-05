@@ -22,7 +22,6 @@ function ctxRotate(ctx: CanvasRenderingContext2D, pen: Pen) {
 
 // 渲染图元 TODO 核心
 export function renderPen(ctx: CanvasRenderingContext2D, pen: Pen) {
-  console.log(pen,"renderPen000000000000000")
   ctx.save() // 保存状态
   ctx.translate(0.5, 0.5) // canvas 1像素容易模糊 偏移0.5让线不模糊 https://www.cnblogs.com/10manongit/p/12855766.html
   const store = pen.calculative.canvas.store;
@@ -99,7 +98,7 @@ export function calcPenRect(pen: Pen) {
 }
 
 
-// 计算图元是否在视图中 是否可见
+// 计算图元是否在视图中 是否可见 暂时都设置为true
 export function calcInView(pen:Pen){
   pen.calculative.inView = true
 }
@@ -131,4 +130,19 @@ export function getParent(pen: Pen, root?: boolean): Pen {
     return parent;
   }
   return getParent(parent, root) || parent;
+}
+
+export function getAllChildren(pen: Pen, store: Meta2dStore): Pen[] {
+  if (!pen || !pen.children) {
+    return [];
+  }
+  const children: Pen[] = [];
+  pen.children.forEach((id) => {
+    const child = store.pens[id];
+    if (child) {
+      children.push(child);
+      children.push(...getAllChildren(child, store));
+    }
+  });
+  return children;
 }
