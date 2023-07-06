@@ -573,7 +573,7 @@ export class Canvas {
       y: rect.y - this.activeRect.y,
     };
     console.log(offset,"offset")
-    this.translatePens(this.movingPens,x,y,true)
+    this.translatePens(this.movingPens,x,y,true,e)
   }
 
 
@@ -694,15 +694,16 @@ export class Canvas {
    * @param y 偏移量
    * @param doing 是否可持续移动
    * */
-  translatePens(pens:Pen[] = this.store.active,x: number,y:number,doing?:boolean){
+  translatePens(pens:Pen[] = this.store.active,x: number,y:number,doing?:boolean,e?){
     if(!pens || pens.length === 0){
       return
     }
     console.log("执行translate")
     pens.forEach((pen)=>{
       const rect = translateRect(pen.calculative.worldRect, x, y);
-      this.mouseDown.x = rect.center.x
-      this.mouseDown.y = rect.center.y
+      this.mouseDown.x = e.x
+      this.mouseDown.y = e.y
+
       this.updatePenRect(pen,{worldRectIsReady:true})
       // pen.calculative.worldRect.x = pen.x
       // pen.calculative.worldRect.y = pen.y
