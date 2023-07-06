@@ -1,5 +1,6 @@
 import {Point} from "../point";
 import {Pen} from "../pen";
+import {rotatePoint} from "../../../../../Desktop/蔡豪/meta2d.js/packages/core/src/point/point";
 
 export interface Rect { // 定义矩形
     x?: number; // 横坐标
@@ -101,6 +102,7 @@ export function pointInRect(pt:Point,rect: Rect){
     return pointInVertices(pt,points)
 }
 export function translateRect(rect: Rect | Pen, x: number, y: number) {
+    console.log("translateRect",x,y,rect.x,rect.y)
     rect.x += x;
     rect.y += y;
     rect.ex += x;
@@ -110,4 +112,24 @@ export function translateRect(rect: Rect | Pen, x: number, y: number) {
         rect.center.x += x;
         rect.center.y += y;
     }
+    return rect
+}
+
+export function rectToPoints(rect: Rect) {
+    const pts = [
+        { x: rect.x, y: rect.y },
+        { x: rect.ex, y: rect.y },
+        { x: rect.ex, y: rect.ey },
+        { x: rect.x, y: rect.ey },
+    ];
+
+    if (rect.rotate) {
+        if (!rect.center) {
+            calcCenter(rect);
+        }
+        pts.forEach((pt) => {
+            rotatePoint(pt, rect.rotate, rect.center);
+        });
+    }
+    return pts;
 }

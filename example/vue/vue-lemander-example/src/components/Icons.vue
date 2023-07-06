@@ -7,7 +7,6 @@ const icons = data
 let searchData = ref("")
 let isActive = ref(false)
 function changeWidth(e){
-  console.log(e.x)
   // document.querySelector(".l").style.left = e.x+"px"\
   if(isActive.value){
     document.documentElement.style.setProperty('--list-width',e.x-8+"px")

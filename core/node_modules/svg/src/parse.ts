@@ -160,7 +160,6 @@ export function calcWorldPositions( command: SvgPath ){
   let x = 0 // 初始x坐标
   let y = 0 // 初始y坐标
   command.commands.forEach((item)=> {
-    console.log(item)
     switch (item.key){
       // z 关闭路径
       case 'Z':

@@ -1,1 +1,1 @@
-export const needSetPenProps = ['x', 'y', 'width', 'height'];
+export const needSetPenProps: string[] = ['x', 'y', 'width', 'height'];
