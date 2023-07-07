@@ -16,3 +16,9 @@ export const globalStore: {
   path2dDraws:{},
   canvasDraws:{}
 }
+
+export function registerAnchors(anchorsFns: {
+  [key: string]: (pen: Pen) => void;
+}) {
+  Object.assign(globalStore.anchors, anchorsFns);
+}

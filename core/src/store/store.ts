@@ -1,6 +1,6 @@
 import {Pen} from "../pen";
 import {globalStore} from "./global";
-import {Options} from "../../options";
+import {defaultOptions, Options} from "../../options";
 import mitt, {Emitter} from "mitt";
 import {Point} from "../point";
 export interface Meta2dStore {
@@ -62,7 +62,7 @@ function createStore(){ //
         animateMap: new WeakMap(),
         active: [],
         animates: new Set(),
-        options: { },
+        options: { ...defaultOptions },
         emitter: mitt(),
         bindDatas: {},
     } ; // as 断言

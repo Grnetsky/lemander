@@ -2,6 +2,7 @@ import {Pen} from "./pen";
 import {Meta2dStore} from "../store";
 import {calcCenter, calcRelativeRect, calcRightBottom, Rect} from "../rect";
 import {globalStore} from "../store/global";
+import {Point} from "../point";
 
 // 获取全局色彩主题配置
 export function getGlobalColor(store: Meta2dStore) {
@@ -53,6 +54,10 @@ export function ctxDrawPath(
       path(pen,ctx)
       fill && ctx.fill();
       ctx.restore();
+    }
+
+    if (pen.calculative.active && !pen.calculative.pencil) {
+      renderLineAnchors(ctx, pen);
     }
   }
 }
@@ -145,4 +150,167 @@ export function getAllChildren(pen: Pen, store: Meta2dStore): Pen[] {
     }
   });
   return children;
+}
+
+
+//pen 需要设置的图元 pt 锚点坐标
+export function calcWorldPointOfPen(pen: Pen, pt: Point) {
+  const p :Point = {...pt}
+  const { x, y, width, height} = pen.calculative.worldRect
+  p.x = x + width * pt.x
+  p.y = y + height * pt.y
+  if(pt.prev){
+    p.prev = {
+      penId : pen.id,
+      connectTo: pt.connectTo,
+      x: x + width *pt.prev.x,
+      y: y +width* pt.prev.y
+    }
+  }
+  if(pt.next){
+    p.next = {
+      penId : pen.id,
+      connectTo: pt.connectTo,
+      x: x + width *pt.prev.x,
+      y: y +width* pt.prev.y
+    }
+  }
+  console.log("计算锚点",p)
+
+  return p
+}
+
+export function calcWordAnchors(pen:Pen){
+  const store = pen.calculative.canvas.store // 获取全局存储对象
+  let anchors: Point[] = [] // 初始化
+  if(pen.anchors){
+    pen.anchors.forEach((anchor)=>{
+      anchors.push(calcWorldPointOfPen(pen,anchor))
+    })
+  }
+  if (
+    !anchors.length &&
+    !pen.type &&
+    !pen.calculative.canvas.parent.isCombine(pen)
+  ) {
+    const { x, y, width, height } = pen.calculative.worldRect;
+    anchors = store.options.defaultAnchors.map((anchor, index) => {
+      return {
+        id: `${index}`,
+        penId: pen.id,
+        x: x + width * anchor.x,
+        y: y + height * anchor.y,
+      };
+    });
+  }
+
+  if (!pen.type || pen.anchors) {
+    pen.calculative.worldAnchors = anchors;
+  }
+  if (pen.calculative.activeAnchor && anchors.length) {
+    pen.calculative.activeAnchor = anchors.find((a) => {
+      a.id === pen.calculative.activeAnchor.id;
+    });
+  }
+}
+export function renderAnchor(
+  ctx: CanvasRenderingContext2D,
+  pt: Point,
+  pen: Pen
+) {
+  if (!pt) {
+    return;
+  }
+
+  const active = pen.calculative.activeAnchor === pt;
+  let r = 3;
+  if (pen.calculative.lineWidth > 3) {
+    r = pen.calculative.lineWidth;
+  }
+  if (active) {
+    if (pt.prev) {
+      ctx.save();
+      ctx.strokeStyle = '#4dffff';
+      ctx.beginPath();
+      ctx.moveTo(pt.prev.x, pt.prev.y);
+      ctx.lineTo(pt.x, pt.y);
+      ctx.stroke();
+      ctx.restore();
+
+      ctx.save();
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(pt.prev.x, pt.prev.y, r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+    }
+    if (pt.next) {
+      ctx.save();
+      ctx.strokeStyle = '#0b5bee';
+      ctx.beginPath();
+      ctx.moveTo(pt.x, pt.y);
+      ctx.lineTo(pt.next.x, pt.next.y);
+      ctx.stroke();
+      ctx.restore();
+
+      ctx.save();
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(pt.next.x, pt.next.y, r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+
+      ctx.beginPath();
+      ctx.arc(pt.x, pt.y, r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+    }
+
+    ctx.beginPath();
+    ctx.arc(pt.x, pt.y, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+  } else {
+    ctx.save();
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(pt.x, pt.y, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+
+export function renderLineAnchors(ctx: CanvasRenderingContext2D, pen: Pen) {
+  const store = pen.calculative.canvas.store;
+
+  ctx.save();
+  ctx.lineWidth = 1;
+  ctx.fillStyle = pen.activeColor || store.options.activeColor;
+  pen.calculative.worldAnchors.forEach((pt) => {
+      renderAnchor(ctx, pt, pen);
+  });
+  ctx.restore();
+}
+
+// 给组件设置hover
+export function setHover(pen: Pen, hover = true) {
+  if (!pen) {
+    return;
+  }
+  const store = pen.calculative.canvas.store;
+  pen.calculative.hover = hover;
+  if (pen.children) {
+    pen.children.forEach((id) => {
+      // 子节点没有自己的独立hover，继承父节点hover
+      if (
+        store.pens[id]?.hoverColor == undefined &&
+        store.pens[id]?.hoverBackground == undefined
+      ) {
+        setHover(store.pens[id], hover);
+      }
+    });
+  }
 }

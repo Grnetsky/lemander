@@ -5,6 +5,9 @@ export interface Point {
   connectTo?: string
   prev?: Point
   next?: Point
+  id?:string
+  anchorId?: string;
+
 }
 
 export function rotatePoint(pt: Point, angle: number, center: Point) {
@@ -25,4 +28,13 @@ export function rotatePoint(pt: Point, angle: number, center: Point) {
 
   pt.prev && rotatePoint(pt.prev, angle, center);
   pt.next && rotatePoint(pt.next, angle, center);
+}
+
+export function hitPoint(pt: Point, target: Point, radius = 5) {
+  return (
+    pt.x > target.x - radius &&
+    pt.x < target.x + radius &&
+    pt.y > target.y - radius &&
+    pt.y < target.y + radius
+  );
 }

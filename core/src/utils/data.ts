@@ -4,5 +4,8 @@ export enum HoverType {
   LineAnchor,
   Resize,
   Rotate,
-  Node
+  Line,
+  Node,
+  LineAnchorPrev,
+  LineAnchorNext
 }

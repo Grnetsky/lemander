@@ -2,7 +2,7 @@
 import { square } from './square'
 import { circle } from "./circle";
 import { svgPath } from "./svgPath";
-import {triangle} from "./triangle";
+import {triangle, triangleAnchors} from "./triangle";
 
 export function commonPens (){
   return {
@@ -11,4 +11,10 @@ export function commonPens (){
     svgPath,
     triangle,
   }
+}
+
+export function commonAnchors() {
+  return {
+    triangle: triangleAnchors,
+  };
 }

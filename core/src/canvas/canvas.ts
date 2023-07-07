@@ -1,15 +1,16 @@
 import {Meta2d} from "../core";
 import {Meta2dStore} from "../store";
 import {MagnifierCanvas} from "./magnifierCanvas";
-import {Point, rotatePoint} from "../point";
-import {needSetPenProps, Pen} from "../pen";
+import {hitPoint, Point, rotatePoint} from "../point";
+import {calcWordAnchors, needSetPenProps, Pen, setHover} from "../pen";
 import {s8} from "../utils/uuid";
 import {globalStore} from "../store/global";
 import {createOffScreen} from "./offscreen";
 import {
   calcInView,
   calcPenRect,
-  calcWorldRects, getAllChildren,
+  calcWorldRects,
+  getAllChildren,
   getGlobalColor,
   getParent,
   renderPen,
@@ -28,8 +29,7 @@ import {
 import {HoverType} from "../utils/data";
 import {getLineR} from "../diagrams/line/line";
 import {deepCopy} from "../../../utils/deepCopy";
-import {deepClone} from "../../../../../Desktop/蔡豪/meta2d.js/packages/core/src/utils/clone";
-import {PenType} from "../../../../../Desktop/蔡豪/meta2d.js/packages/core/src/pen/model";
+import {HotkeyType} from "../../../../../Desktop/蔡豪/meta2d.js/packages/core/src/data";
 
 export const movingSuffix = '-moving' as const;
 
@@ -38,30 +38,34 @@ export class Canvas {
   canvas = document.createElement("canvas") // 创建canvas
   canvasRect: Rect;
 
-  parentElement:HTMLElement // 父元素
+  parentElement: HTMLElement // 父元素
   externalElements = document.createElement('div');  // 这个为外部聚焦框 可能不止一个子元素？ external：外部的
-  width:number // 宽度
-  height:number // 高度
-  clientRect:Rect
+  width: number // 宽度
+  height: number // 高度
+  clientRect: Rect
   dock: { xDock: Point; yDock: Point };
   offscreen = createOffScreen() as HTMLCanvasElement
   magnifier: MagnifierCanvas
   private lastRender: number = 0
   private renderTimer: number = 0
-  mousePos: Point = { x: 0, y: 0 }
+  mousePos: Point = {x: 0, y: 0}
   mouseDown: { x: number; y: number; restore?: boolean };
   timer: any
-  activeRect:Rect
+  activeRect: Rect
   private hoverType: HoverType;
-  private movingPens: Pen[] & any[];
-  private lastMouseTime: any;
-  private initActiveRect: Rect;
-  private sizeCPs: Point[];
-  private hoverTimer: number = 0;
+  private movingPens: Pen[] & any[]
+  private lastMouseTime: any
+  private initActiveRect: Rect
+  private sizeCPs: Point[]
+  private hoverTimer: number = 0
+  private dragRect: Rect;
+  private movingAnchor: Point;
+  private pointSize = 8 as const
+
   constructor(
-    public parent:Meta2d,
-    public parentEle:HTMLElement,
-    public store:Meta2dStore
+    public parent: Meta2d,
+    public parentEle: HTMLElement,
+    public store: Meta2dStore
   ) {
     this.parentElement = parentEle
     this.parentElement?.appendChild(this.canvas)
@@ -89,7 +93,8 @@ export class Canvas {
     parentEle.appendChild(this.externalElements);
     this.listen()
   }
-  resize(w?:number, h?:number){
+
+  resize(w?: number, h?: number) {
     w = w || this.parentElement.clientWidth
     h = h || this.parentElement.clientHeight
     this.width = w
@@ -102,6 +107,7 @@ export class Canvas {
     this.offscreen.height = h
     this.render()
   }
+
   onResize = () => {
     if (this.timer) {
       clearTimeout(this.timer);
@@ -111,11 +117,12 @@ export class Canvas {
       this.timer = undefined;
     }, 100);
   };
+
   // TODO 暂留 监听各个事件e
   listen() {
     console.log("canvas監聽")
     this.externalElements.ondragover = (e) => e.preventDefault(); //ondrop 前需先定义ondragover
-    this.externalElements.onmousemove =  (e)=>{
+    this.externalElements.onmousemove = (e) => {
       this.onMouseMove({
         x: e.offsetX,
         y: e.offsetY,
@@ -130,7 +137,7 @@ export class Canvas {
       })
     }
     this.externalElements.ondrop = this.ondrop
-    this.externalElements.onmousedown = (e)=>{
+    this.externalElements.onmousedown = (e) => {
       this.onMouseDown({
         x: e.offsetX,
         y: e.offsetY,
@@ -144,7 +151,7 @@ export class Canvas {
         buttons: e.buttons,
       })
     }
-    this.externalElements.onmouseup = (e)=>{
+    this.externalElements.onmouseup = (e) => {
       this.onMouseUp(
         {
           x: e.offsetX,
@@ -160,28 +167,29 @@ export class Canvas {
         }
       )
     }
-    this.canvas.ondragover = (e)=>{
+    this.canvas.ondragover = (e) => {
       e.preventDefault();
     }
-    window.onresize = ()=>{
+    window.onresize = () => {
       this.onResize()
     }
   }
+
   // 添加图元
-  private async dropPens(pens: Pen[],pt: Point) {
-    for(const pen of pens){
-      !pen.parentId && this.randomCombineId(pen,pens) // 无parentId则绑定
+  private async dropPens(pens: Pen[], pt: Point) {
+    for (const pen of pens) {
+      !pen.parentId && this.randomCombineId(pen, pens) // 无parentId则绑定
     }
-    for(let pen of pens){
+    for (let pen of pens) {
       !pen.id && (pen.id = s8())  // 不存在id则赋值
       console.log(this.store)
-      !pen.calculative && (pen.calculative = { canvas : this}) //初始化calculative
+      !pen.calculative && (pen.calculative = {canvas: this}) //初始化calculative
       this.store.pens[pen.id] = pen  // 将图元记录到数据仓库
     }
 
 
-    for(let pen of pens){
-      if(!pen.parentId){
+    for (let pen of pens) {
+      if (!pen.parentId) {
         // 伴随画布一起缩放
         pen.width *= this.store.data.scale
         pen.height *= this.store.data.scale
@@ -199,8 +207,8 @@ export class Canvas {
   // 添加图元
   private async addPens(pens: Pen[]) {
     // 该处可放生命周期
-    const list: Pen[] =[]
-    for(let pen of pens){
+    const list: Pen[] = []
+    for (let pen of pens) {
       this.makePen(pen) // 生成pen对象
       list.push(pen)
     }
@@ -208,25 +216,27 @@ export class Canvas {
     this.render()
     return list
   }
-  ondrop =  (e)=>{
+
+  ondrop = (e) => {
     e.preventDefault();
     // metaData
     try {
       let metaData = JSON.parse(e.dataTransfer.getData('meta2d'))
-      metaData = Array.isArray(metaData)? metaData : [metaData]  // 转换为数组
-      console.log("metaData数据为",metaData)
-      const pt = { x:e.offsetX, y:e.offsetY } // 鼠标坐标
-      this.dropPens(metaData,pt) // 放置图元
-    }catch (err){
+      metaData = Array.isArray(metaData) ? metaData : [metaData]  // 转换为数组
+      console.log("metaData数据为", metaData)
+      const pt = {x: e.offsetX, y: e.offsetY} // 鼠标坐标
+      this.dropPens(metaData, pt) // 放置图元
+    } catch (err) {
       console.log("无法识别的元件")
     }
   }
+
   // 初始化pen的calculative属性
   makePen(pen: Pen) {
     !pen.id && (pen.id = s8())
     this.store.data.pens.push(pen) // Meta2dData 记录pens
     this.store.pens[pen.id] = pen // 在store中注册
-    if(pen.path){ // 该pen有path对象
+    if (pen.path) { // 该pen有path对象
       !pen.pathId && (pen.pathId = s8()) // 设置path的唯一标识
       // 将该pen的path记录到数据仓库中
       const paths = this.store.data.paths; //svgPath
@@ -240,14 +250,14 @@ export class Canvas {
     }
 
     // 设置pen的fontSize
-    const { fontSize, lineHeight } = this.store.options; // 从设置中读取数据
+    const {fontSize, lineHeight} = this.store.options; // 从设置中读取数据
     if (!pen.fontSize) {
       pen.fontSize = fontSize;
     }
     if (!pen.lineHeight) {
       pen.lineHeight = lineHeight;
     }
-    pen.calculative = { canvas: this, singleton: pen.calculative?.singleton }
+    pen.calculative = {canvas: this, singleton: pen.calculative?.singleton}
     // 将pen的key 加载到 pen的calculative中
     for (const k in pen) {
       if (typeof pen[k] !== 'object' || k === 'lineDash') {
@@ -255,11 +265,10 @@ export class Canvas {
       }
     }
     // 锚点
-    if(!pen.anchors && globalStore.anchors[pen.name]){
+    if (!pen.anchors && globalStore.anchors[pen.name]) {
       !pen.anchors && (pen.anchors = []) // 初始化pen的锚点
-      globalStore.anchors[pen.name](pen) // 将乖类型图元的锚点记录到globalStore中
+      globalStore.anchors[pen.name](pen) // 将该类型图元的锚点记录到globalStore中
     }
-    !pen.rotate && (pen.rotate = 0);  // 初始化旋转角度
     this.updatePenRect(pen)
 
     // 计算锚点信息
@@ -271,17 +280,19 @@ export class Canvas {
     // 初始化pen的rotate属性
     !pen.rotate && (pen.rotate = 0)
   }
+
   // 更新图元矩形信息（位置，锚点，icon，text，inView？）
-  private updatePenRect(pen: Pen,{
+  private updatePenRect(pen: Pen, {
     worldRectIsReady,
   }: {
     worldRectIsReady?: boolean;  //TODO 这个属性的作用？？
   } = {}) {
-    if(worldRectIsReady){   // 暂时不用理会
+    if (worldRectIsReady) {   // 暂时不用理会
       calcPenRect(pen)
-    }else {
+    } else {
       calcWorldRects(pen)
     }
+    calcWordAnchors(pen)
     calcInView(pen) // 计算图元是否在视图中 状态更新到pen中
 
     // 设置path2dMap
@@ -289,30 +300,31 @@ export class Canvas {
     this.store.path2dMap.set(pen, globalStore.path2dDraws[pen.name](pen));
 
     // 递归设置子项
-    if(pen.children){
-      pen.children.forEach((id)=>{
+    if (pen.children) {
+      pen.children.forEach((id) => {
         const child = this.store.pens[id]
-        child && this.updatePenRect(child,{worldRectIsReady:false})  // 递归
+        child && this.updatePenRect(child, {worldRectIsReady: false})  // 递归
       })
     }
     // ...
   }
 
-  active(pens:Pen[]){
-    console.log("activepens",this.store.active)
-    if(this.store.active){
+  active(pens: Pen[]) {
+    // this.deactive()
+    if (this.store.active) {
     }
     this.store.active = []
-    pens.forEach((item)=>{
+    pens.forEach((item) => {
       item.calculative.active = true
       setChildrenActive(item)
     })
     // 将所选图元推入 active列表中
     this.store.active.push(...pens)
     this.activeRect = undefined;
+    console.log(this.store.active)
   }
 
-  deactive(){
+  deactive() {
     this.store.active.forEach((pen) => {
       pen.calculative.active = undefined;
       setChildrenActive(pen, false);
@@ -321,11 +333,12 @@ export class Canvas {
     this.store.active = [];
     this.activeRect = undefined;
   }
+
   // 渲染原理  清屏>更新>渲染
-  render(){
+  render() {
     let now = performance.now()  // 获取现在时间
-    if(now -this.lastRender < this.store.options.interval){ // 设置渲染频率
-      if(this.renderTimer){
+    if (now - this.lastRender < this.store.options.interval) { // 设置渲染频率
+      if (this.renderTimer) {
         cancelAnimationFrame(this.renderTimer)
       }
       this.renderTimer = requestAnimationFrame(this.render) // 重绘
@@ -333,7 +346,7 @@ export class Canvas {
     }
     this.lastRender = now // 记录当前值
     const offscreenCtx = this.offscreen.getContext('2d') // 离屏渲染层
-    offscreenCtx.clearRect(0,0,this.offscreen.width,this.offscreen.height)  // 清屏
+    offscreenCtx.clearRect(0, 0, this.offscreen.width, this.offscreen.height)  // 清屏
     offscreenCtx.save() // 保存当前状态
     offscreenCtx.translate(this.store.data.x, this.store.data.y);  // TODO 为甚要移动渲染层？
     // 渲染部分
@@ -348,10 +361,10 @@ export class Canvas {
 
   // 绘制图元
   private renderPens() {
-    const ctx =  this.offscreen.getContext('2d')
+    const ctx = this.offscreen.getContext('2d')
     ctx.strokeStyle = getGlobalColor(this.store)
-    for (let pen of this.store.data.pens){
-     renderPen(ctx,pen)
+    for (let pen of this.store.data.pens) {
+      renderPen(ctx, pen)
     }
   }
 
@@ -364,30 +377,36 @@ export class Canvas {
     randomId(pen)
     pen.parentId = parentId
     const newChildren = []
-    if(Array.isArray(pen.children)){
-      for(let childId of pen.children){
-        const childPen = pens.find((item)=>item.id === childId)
-        childPen && newChildren.push(this.randomCombineId(childPen,pens,pen.id).id) // 递归
+    if (Array.isArray(pen.children)) {
+      for (let childId of pen.children) {
+        const childPen = pens.find((item) => item.id === childId)
+        childPen && newChildren.push(this.randomCombineId(childPen, pens, pen.id).id) // 递归
       }
     }
     pen.children = newChildren
     return pen;
   }
+
   // 获取焦点信息
-  getHover(pt:Point) {
+  getHover(pt: Point) {
     let hoverType = HoverType.None
     this.store.hover = undefined
     this.store.hoverAnchor = undefined
-    if(hoverType === HoverType.None){
-      hoverType = this.inPens(pt,this.store.data.pens)
+    if (hoverType === HoverType.None) {
+      hoverType = this.inPens(pt, this.store.data.pens)
     }
+    console.log(hoverType,"hovertype")
     this.hoverType = hoverType
     if (hoverType === HoverType.Node) {
       // 若hoverType == None
-      this.externalElements.style.cursor = 'crosshair'
+      this.externalElements.style.cursor = 'move'
 
-    }else {
+    } else {
       this.externalElements.style.cursor = 'default'
+    }
+    if (this.store.hover) {
+      this.store.hover.calculative.hover = true;
+      setHover(getParent(this.store.hover, true) || this.store.hover)
     }
   }
 
@@ -397,7 +416,7 @@ export class Canvas {
     return pt;
   };
 
-  private onMouseDown(e:{
+  private onMouseDown(e: {
     x: number;
     y: number;
     clientX: number;
@@ -408,9 +427,8 @@ export class Canvas {
     ctrlKey?: boolean;
     shiftKey?: boolean;
     altKey?: boolean;
-  }){
+  }) {
 
-    console.log("mousedown",this.store.active)
     // TODO 如何防止抖动的？
     this.mouseDown = e;
     this.lastMouseTime = performance.now();
@@ -418,11 +436,13 @@ export class Canvas {
     this.mousePos.x = e.x;
     this.mousePos.y = e.y;
     this.mouseDown = e
-    switch (this.hoverType){
+    switch (this.hoverType) {
       case HoverType.Node:
-        if(this.store.hover){
+        console.log(this.store.hover, "hover")
+        if (this.store.hover) {
           // 获取hover的图元
           const pen = getParent(this.store.hover, true) || this.store.hover
+          this.deactive()
           this.active([pen])
         }
         break
@@ -431,6 +451,9 @@ export class Canvas {
         break
     }
     this.calcActiveRect();
+    this.render()
+    console.log("mousedown", this.store.active)
+
   }
 
   private onMouseMove = (
@@ -461,12 +484,26 @@ export class Canvas {
     this.mousePos.y = e.y
     this.getHover(e)
     // 在这当鼠标移出时候 就已经不是
-    if(this.hoverType === HoverType.Node && this.mouseDown){
+    if (this.hoverType === HoverType.Node && this.mouseDown && this.activeRect) {
       // const x = e.x- this.mouseDown.x
       // const y = e.y - this.mouseDown.y
       // const shake = 20
       this.movePens(e)
       this.movedActivePens(e.ctrlKey && e.shiftKey)
+    }
+
+    // 框选
+    if (this.hoverType === HoverType.None && this.mouseDown) {
+      this.dragRect = {
+        x: Math.min(this.mouseDown.x, e.x),
+        y: Math.min(this.mouseDown.y, e.y),
+        ex: Math.max(this.mouseDown.x, e.x),
+        ey: Math.max(this.mouseDown.y, e.y),
+        width: Math.abs(e.x - this.mouseDown.x),
+        height: Math.abs(e.y - this.mouseDown.y),
+      };
+      this.render();
+      return;
     }
     globalThis.debug && console.time('hover');
     const now = performance.now();
@@ -476,60 +513,73 @@ export class Canvas {
     }
     this.render();
   }
+
   // 获取鼠标所触碰的元素
 
-   private onMouseUp(
-     e: {
-       x: number;
-       y: number;
-       clientX: number;
-       clientY: number;
-       pageX: number;
-       pageY: number;
-       buttons?: number;
-       ctrlKey?: boolean;
-       shiftKey?: boolean;
-       altKey?: boolean;
-   }){
-     this.mouseDown = undefined;
+  private onMouseUp(
+    e: {
+      x: number;
+      y: number;
+      clientX: number;
+      clientY: number;
+      pageX: number;
+      pageY: number;
+      buttons?: number;
+      ctrlKey?: boolean;
+      shiftKey?: boolean;
+      altKey?: boolean;
+    }) {
+    this.mouseDown = undefined;
 
-     this.calibrateMouse(e)
-     this.mousePos.x = e.x
-     this.mousePos.y = e.y
+    this.calibrateMouse(e)
+    this.mousePos.x = e.x
+    this.mousePos.y = e.y
 
-     if(this.movingPens){
-       this.movedActivePens(e.ctrlKey && e.shiftKey)
-       this.movingPens = undefined
-
-     }
-
-    if(this.hoverType == HoverType.Node){
+    if (this.movingPens) {
+      this.movedActivePens(e.ctrlKey && e.shiftKey)
+      this.movingPens = undefined
 
     }
-   }
+
+    if (this.hoverType == HoverType.Node) {
+
+    }
+  }
 
 
-  private inPens(pt: Point,pens) {
+  private inPens(pt: Point, pens) {
     let hoverType = HoverType.None // 初始化
-    for (let i = pens.length - 1 ;i >=0;--i){
+    outer: for (let i = pens.length - 1; i >= 0; --i) {
       const pen = pens[i]
       const r = getLineR(pen); // r 是什么？？
 
-      // if(!pointInSimpleRect(pt,pen.calculative.worldRect,r)&&!pointInRect(pt,pen.calculative.worldRect)){
-      //     continue
-      // }
+      if(!pointInSimpleRect(pt,pen.calculative.worldRect,r)&&!pointInRect(pt,pen.calculative.worldRect)){
+          continue
+      }
+
+      if (pen.calculative.worldAnchors) {
+        for (const anchor of pen.calculative.worldAnchors) {
+          hoverType = this.inAnchor(pt, pen, anchor);
+          if (hoverType) {
+            break outer;
+          }
+        }
+      }
+
       let isIn = false
-    if(pen.name === 'line'){
-      isIn = pointInSimpleRect(pt,pen.calculative.worldRect,pen.lineWidth)
-    }else {
-      isIn = pointInRect(pt,pen.calculative.worldRect)
-    }
-    if(isIn){
-      this.store.hover = pen
-      hoverType = HoverType.Node
-      this.store.pointAt = pt
-    }
-    // 递归子元素
+      if (pen.name === 'line') {
+        isIn = pointInSimpleRect(pt, pen.calculative.worldRect, pen.lineWidth)
+      } else {
+        isIn = pointInRect(pt, pen.calculative.worldRect)
+      }
+
+
+      if (isIn) {
+        this.store.hover = pen
+        hoverType = HoverType.Node
+        this.store.pointAt = pt
+      }
+      // 递归子元素
       // if(pen.children){
       //   const pens = []
       //   pen.children.forEach(id=>{
@@ -557,7 +607,7 @@ export class Canvas {
     altKey?: boolean
   }) {
     // if (!this.initActiveRect) {
-      this.initActiveRect = deepCopy(this.activeRect);
+    this.initActiveRect = deepCopy(this.activeRect);
     //   return;
     // }
     this.movingPens = this.store.active
@@ -565,15 +615,15 @@ export class Canvas {
     // 计算鼠标偏移量
     let x = e.x - this.mouseDown.x;
     let y = e.y - this.mouseDown.y;
-    console.log(x,y,"单位偏移")
+    console.log(x, y, "单位偏移")
     const rect = deepCopy(this.initActiveRect);
     translateRect(rect, x, y);
     const offset: Point = {
-      x: rect.x - this.activeRect.x ,
+      x: rect.x - this.activeRect.x,
       y: rect.y - this.activeRect.y,
     };
-    console.log(offset,"offset")
-    this.translatePens(this.movingPens,x,y,true,e)
+    console.log(offset, "offset")
+    this.translatePens(this.movingPens, x, y, true, e)
   }
 
 
@@ -584,15 +634,15 @@ export class Canvas {
     const containChildPens = this.getAllByPens(this.movingPens)  // 获取所有图元
     const copyContainChildPens = deepCopy(containChildPens, true); // 深拷贝
 
-    containChildPens.forEach(i=>{
+    containChildPens.forEach(i => {
       // 为什么要重新设置id？ 因为要放入
-      this.changeIdsByMoving(i,copyContainChildPens)
+      this.changeIdsByMoving(i, copyContainChildPens)
       this.store.pens[i.id] = i  // 将复制的图元信息祖册到全局pens中
       i.calculative.canvas = this
       const value: Pen = {
         globalAlpha: 0.5  // 更改透明度
       }
-      this.updateValue(i,value)
+      this.updateValue(i, value)
     })
   }
 
@@ -609,46 +659,47 @@ export class Canvas {
 
     // 为相关图元添加 后缀
     pen.id += movingSuffix
-    if(pen.parentId && pens.find(i=>i.id === pen.parentId)){
+    if (pen.parentId && pens.find(i => i.id === pen.parentId)) {
       pen.parentId += movingSuffix
     }
-    if(pen.children){
-      pen.children = pen.children.map(i=>i += movingSuffix)
+    if (pen.children) {
+      pen.children = pen.children.map(i => i += movingSuffix)
     }
   }
 
-  private updateValue(pen: Pen, data: Pen) : void {
-    let willSetPenRect :boolean = false
+  private updateValue(pen: Pen, data: Pen): void {
+    let willSetPenRect: boolean = false
     const penRect = this.getPenRect(pen)
     const oldName = pen.name
     const isChangeName = oldName !== pen.name
-    data.newId && this.changePenId(pen.id,data.newId)
+    data.newId && this.changePenId(pen.id, data.newId)
     // 新数据注册到pen中
-    Object.assign(pen,data)
-    for (let k in data){
-      if(typeof pen[k] !== "object" ){
+    Object.assign(pen, data)
+    for (let k in data) {
+      if (typeof pen[k] !== "object") {
         pen.calculative[k] = data[k]
       }
-      if(needSetPenProps.includes(k)){
+      if (needSetPenProps.includes(k)) {
         willSetPenRect = true
       }
     }
-    if(willSetPenRect){
+    if (willSetPenRect) {
       const rect = {
-        x:100,
-        y:data.y ?? penRect.y,
+        x: 100,
+        y: data.y ?? penRect.y,
         width: data.width ?? penRect.width,
         height: data.height ?? penRect.height,
       }
       this.setPenRect(pen, rect, false);
     }
   }
+
   setPenRect(pen: Pen, rect: Rect, render = true) {
     if (pen.parentId) {
       // 子节点的 rect 值，一定得是比例值
       Object.assign(pen, rect);
     } else {
-      const { origin, scale } = this.store.data;
+      const {origin, scale} = this.store.data;
       pen.x = origin.x + rect.x * scale;
       pen.y = origin.y + rect.y * scale;
       pen.width = rect.width * scale;
@@ -661,23 +712,22 @@ export class Canvas {
   }
 
   private execPenResize(pen: Pen) {
-    pen.onResize?.(pen);
     pen.children?.forEach((chlidId) => {
       const child = this.store.pens[chlidId];
       child && this.execPenResize(child);
     });
   }
 
-  private getPenRect(pen: Pen,origin = this.store.data.origin,scale = this.store.data.scale) {
-    if(!pen)return
-    if(pen.parentId){
+  private getPenRect(pen: Pen, origin = this.store.data.origin, scale = this.store.data.scale) {
+    if (!pen) return
+    if (pen.parentId) {
       return {
         x: pen.x,
-        y:pen.y,
-        width:pen.width,
-        height:pen.height
+        y: pen.y,
+        width: pen.width,
+        height: pen.height
       }
-    }else {
+    } else {
       return {
         x: (pen.x - origin.x) / scale,
         y: (pen.y - origin.y) / scale,
@@ -694,17 +744,16 @@ export class Canvas {
    * @param y 偏移量
    * @param doing 是否可持续移动
    * */
-  translatePens(pens:Pen[] = this.store.active,x: number,y:number,doing?:boolean,e?){
-    if(!pens || pens.length === 0){
+  translatePens(pens: Pen[] = this.store.active, x: number, y: number, doing?: boolean, e?) {
+    if (!pens || pens.length === 0) {
       return
     }
     console.log("执行translate")
-    pens.forEach((pen)=>{
+    pens.forEach((pen) => {
       const rect = translateRect(pen.calculative.worldRect, x, y);
       this.mouseDown.x = e.x
       this.mouseDown.y = e.y
-
-      this.updatePenRect(pen,{worldRectIsReady:true})
+      this.updatePenRect(pen, {worldRectIsReady: true})
       // pen.calculative.worldRect.x = pen.x
       // pen.calculative.worldRect.y = pen.y
 
@@ -712,16 +761,17 @@ export class Canvas {
     // this.activeRect && this.getSizeCPs();
     this.render();
   }
+
   getSizeCPs() {
     this.sizeCPs = rectToPoints(this.activeRect);
     // 正上 正右 正下 正左
     const pts = [
-      { x: 0.5, y: 0 },
-      { x: 1, y: 0.5 },
-      { x: 0.5, y: 1 },
-      { x: 0, y: 0.5 },
+      {x: 0.5, y: 0},
+      {x: 1, y: 0.5},
+      {x: 0.5, y: 1},
+      {x: 0, y: 0.5},
     ] as const;
-    const { x, y, width, height, rotate, center } = this.activeRect;
+    const {x, y, width, height, rotate, center} = this.activeRect;
     pts.forEach((pt) => {
       const p = {
         x: pt.x * width + x,
@@ -731,15 +781,16 @@ export class Canvas {
       this.sizeCPs.push(p);
     });
   }
+
   private changePenId(id: string, newId: string) {
-    if(id === newId)return
+    if (id === newId) return
     const pen = this.store.pens[id]
-    if(!pen || this.store.pens[newId])return
+    if (!pen || this.store.pens[newId]) return
     pen.id = newId
     this.store.pens[newId] = this.store.pens[id]
     delete this.store.pens[id]
 
-    if(pen.parentId){
+    if (pen.parentId) {
       const parent = this.store.pens[pen.parentId];
       const index = parent.children?.findIndex((i) => i === id);
       index !== -1 && parent.children?.splice(index, 1, newId);
@@ -751,43 +802,115 @@ export class Canvas {
   }
 
   private calcActiveRect() {
-    if(this.store.active.length === 0){
+    if (this.store.active.length === 0) {
       return
-    }else if(this.store.active.length === 1){
+    } else if (this.store.active.length === 1) {
       this.activeRect = deepCopy(this.store.active[0].calculative.worldRect)
       this.activeRect.rotate = this.store.active[0].calculative.rotate || 0;
       calcCenter(this.activeRect);
-    }else {
+    } else {
       // 选中为多个 暂不考虑
     }
 
 
   }
 
+  // 设置锚点
+  setAnchor() {
+
+  }
+
+  delete(pens: Pen[]) {
+
+  }
+
   private movedActivePens(readyConnect?: boolean) {
-    const initPens = deepClone(this.store.active, true);
     // 从选中的图元中
     this.store.active.forEach((pen, i: number) => {
-      const { x, y } = this.movingPens[i];
-      console.log(x,y)
+      const {x, y} = this.movingPens[i];
+      console.log(x, y)
       Object.assign(pen, {
         x,
         y,
       });
       this.updatePenRect(pen);
-      // if (pen.calculative.initRect) {
-      //   pen.calculative.initRect.x = pen.calculative.x;
-      //   pen.calculative.initRect.y = pen.calculative.y;
-      //   pen.calculative.initRect.ex = pen.calculative.x + pen.calculative.width;
-      //   pen.calculative.initRect.ey =
-      //     pen.calculative.y + pen.calculative.height;
-      // }
     });
   }
 
 
-}
+  private inAnchor(pt: Point, pen: Pen, anchor: Point): HoverType {
+    console.log("inAnchor",pen)
+    this.store.hoverAnchor = undefined
+    this.movingAnchor = undefined
+    if (!anchor) {
+      return HoverType.None
+    }
+    if (pen.type) {
+      if (anchor.connectTo && !pen.calculative.active) {
+        this.store.hover = this.store.pens[anchor.connectTo];
+        if (this.store.hover) {
+          this.store.hoverAnchor =
+            this.store.hover.calculative.worldAnchors.find(
+              (a) => a.id === anchor.anchorId
+            );
+          this.externalElements.style.cursor = 'crosshair';
+          return HoverType.NodeAnchor;
+        }
+      }
 
+      this.externalElements.style.cursor = 'pointer';
+
+      return HoverType.LineAnchor;
+    }
+
+    console.log(this.mouseDown,pen.type)
+    if (!this.mouseDown && pen.type) {
+      if (
+        pen.calculative.active &&
+        anchor.prev &&
+        hitPoint(pt, anchor.prev, this.pointSize)
+      ) {
+        this.store.hoverAnchor = anchor;
+        this.store.hover = pen;
+        this.externalElements.style.cursor = 'pointer';
+        return HoverType.LineAnchorPrev;
+      }
+      if (hitPoint(pt, anchor, this.pointSize)) {
+        this.store.hoverAnchor = anchor;
+        this.store.hover = pen;
+        if (pen.type) {
+          if (anchor.connectTo && !pen.calculative.active) {
+            this.store.hover = this.store.pens[anchor.connectTo];
+            if (this.store.hover) {
+              this.store.hoverAnchor =
+                this.store.hover.calculative.worldAnchors.find(
+                  (a) => a.id === anchor.anchorId
+                );
+              this.externalElements.style.cursor = 'crosshair';
+              return HoverType.NodeAnchor;
+            }
+          }
+          return HoverType.LineAnchor;
+        }
+        console.log("6666")
+        return HoverType.NodeAnchor;
+      }
+      console.log("999")
+
+      if (
+        pen.calculative.active &&
+        anchor.next &&
+        hitPoint(pt, anchor.next, this.pointSize)
+      ) {
+        this.store.hoverAnchor = anchor;
+        this.store.hover = pen;
+        this.externalElements.style.cursor = 'pointer';
+        return HoverType.LineAnchorNext;
+      }
+    }
+    return HoverType.None
+  }
+}
 // 打平pen 将所以子孙图元加入同一个列表
 
 

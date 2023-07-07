@@ -24,7 +24,7 @@ window.meta2d.open()
             this.store.pens[pen.id] = pen; // 存入到store中
         }
         for (const pen of data.pens) {
-            this.canvas.makePen(pen);
+            this.canvas.(pen);
         }
     }
     if (!render) {
@@ -561,3 +561,5 @@ a链接 点击跳转制定帮助页面
 ### path2d
 
 ### svg大小如何设置？
+
+### 如何实现分层？

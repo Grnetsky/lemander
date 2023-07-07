@@ -2,10 +2,11 @@
 import {Point} from "../point";
 import {Rect} from "../rect";
 import {Canvas} from "../canvas";
+import {PenType} from "./model";
 
 export interface Pen extends Rect{
   name?: string
-  type?: string
+  type?: PenType
   prev?: Point
   rotate?: number // 旋转角度
   id?: string // 自身id
@@ -13,8 +14,11 @@ export interface Pen extends Rect{
   width?: number
   globalAlpha?: number // t透明度
   height?: number
+  activeColor?: string
   x?: number
   y?: number
+  hoverColor?:string
+  hoverBackground?: string
   path?: string // svg的path 图像核心属性
   pathId?: string // path的唯一标识
   lineWidth?: number
@@ -29,6 +33,8 @@ export interface Pen extends Rect{
     width?: number
     height?: number
     wordRect?: Rect
+    hover?:boolean
+    activeAnchor?: Point
     borderRadius?: number
     lineWidth?: number
     rotate?: number
