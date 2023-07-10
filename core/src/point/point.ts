@@ -1,4 +1,5 @@
 export interface Point {
+  radius?: any;
   x: number
   y: number
   penId?: string

@@ -30,6 +30,8 @@ import {HoverType} from "../utils/data";
 import {getLineR} from "../diagrams/line/line";
 import {deepCopy} from "../../../utils/deepCopy";
 import {HotkeyType} from "../../../../../Desktop/蔡豪/meta2d.js/packages/core/src/data";
+import {LockState} from "../../../../../Desktop/蔡豪/meta2d.js/packages/core/src/pen/model";
+import {getPensDisableRotate, getPensLock} from "../../../../../Desktop/蔡豪/meta2d.js/packages/core/src/pen/render";
 
 export const movingSuffix = '-moving' as const;
 
@@ -213,6 +215,9 @@ export class Canvas {
       list.push(pen)
     }
     // 渲染
+    this.deactive()
+    this.active(pens)
+    this.calcActiveRect()
     this.render()
     return list
   }
@@ -327,30 +332,38 @@ export class Canvas {
   deactive() {
     this.store.active.forEach((pen) => {
       pen.calculative.active = undefined;
+      pen.calculative.activeAnchor = undefined;
       setChildrenActive(pen, false);
     });
     this.hoverType = HoverType.None;
     this.store.active = [];
     this.activeRect = undefined;
+    this.sizeCPs = undefined;
+    this.store.activeAnchor = undefined;
   }
 
   // 渲染原理  清屏>更新>渲染
   render() {
-    let now = performance.now()  // 获取现在时间
-    if (now - this.lastRender < this.store.options.interval) { // 设置渲染频率
-      if (this.renderTimer) {
-        cancelAnimationFrame(this.renderTimer)
-      }
-      this.renderTimer = requestAnimationFrame(this.render) // 重绘
-      return
-    }
-    this.lastRender = now // 记录当前值
+    // let now = performance.now()  // 获取现在时间
+    // if (now - this.lastRender < this.store.options.interval) { // 设置渲染频率
+    //   if (this.renderTimer) {
+    //     cancelAnimationFrame(this.renderTimer)
+    //   }
+    //   this.renderTimer = requestAnimationFrame(this.render) // 重绘
+    //   return
+    // }
+    // this.renderTimer = undefined;
+    // this.renderTimer = undefined;
+    // this.lastRender = now // 记录当前值
     const offscreenCtx = this.offscreen.getContext('2d') // 离屏渲染层
     offscreenCtx.clearRect(0, 0, this.offscreen.width, this.offscreen.height)  // 清屏
     offscreenCtx.save() // 保存当前状态
     offscreenCtx.translate(this.store.data.x, this.store.data.y);  // TODO 为甚要移动渲染层？
     // 渲染部分
     this.renderPens() // 核心 渲染图元
+    this.renderBorder()
+    this.renderHoverPoint();
+
     offscreenCtx.restore();
 
     // 将隔离层图像渲染到显示层
@@ -404,10 +417,24 @@ export class Canvas {
     } else {
       this.externalElements.style.cursor = 'default'
     }
-    if (this.store.hover) {
-      this.store.hover.calculative.hover = true;
-      setHover(getParent(this.store.hover, true) || this.store.hover)
+    // 记录最后一次hover图元
+    if(this.store.lastHover !== this.store.hover){
+      if (this.store.lastHover) {
+        this.store.lastHover.calculative.hover = false;
+        setHover(
+          getParent(this.store.lastHover, true) || this.store.lastHover,
+          false
+        );
+        this.store.emitter.emit('leave', this.store.lastHover);
+      }
+      if (this.store.hover) {
+        this.store.hover.calculative.hover = true;
+        setHover(getParent(this.store.hover, true) || this.store.hover)
+      }
+      this.store.lastHover = this.store.hover;
+
     }
+
   }
 
   calibrateMouse = (pt: Point) => {
@@ -456,7 +483,7 @@ export class Canvas {
 
   }
 
-  private onMouseMove = (
+  private onMouseMove (
     e: {
       x: number;
       y: number;
@@ -469,7 +496,7 @@ export class Canvas {
       shiftKey?: boolean;
       altKey?: boolean;
     }
-  ) => {
+  ) {
     // 避免鼠标点击和移动一起触发，误抖动
     if (this.lastMouseTime) {
       const now = performance.now();
@@ -544,6 +571,8 @@ export class Canvas {
     if (this.hoverType == HoverType.Node) {
 
     }
+    this.calcActiveRect();
+    this.render()
   }
 
 
@@ -909,6 +938,144 @@ export class Canvas {
       }
     }
     return HoverType.None
+  }
+  renderBorder = () => {
+
+      // Occupied territory.
+      if (
+        this.activeRect &&
+        !(this.store.active.length === 1 && this.store.active[0].type) &&
+        !this.movingPens
+      ) {
+        const ctx = this.offscreen.getContext('2d');
+        ctx.save();
+        ctx.translate(0.5, 0.5);
+        if (this.activeRect.rotate) {
+          ctx.translate(this.activeRect.center.x, this.activeRect.center.y);
+          ctx.rotate((this.activeRect.rotate * Math.PI) / 180);
+          ctx.translate(-this.activeRect.center.x, -this.activeRect.center.y);
+        }
+        ctx.strokeStyle = this.store.options.activeColor;
+
+        ctx.globalAlpha = 0.3;
+        ctx.beginPath();
+        ctx.strokeRect(
+          this.activeRect.x,
+          this.activeRect.y,
+          this.activeRect.width,
+          this.activeRect.height
+        );
+
+        ctx.globalAlpha = 1;
+        // Draw rotate control line.
+        ctx.beginPath();
+        ctx.moveTo(this.activeRect.center.x, this.activeRect.y);
+        ctx.lineTo(this.activeRect.center.x, this.activeRect.y - 30);
+        ctx.stroke();
+
+        // Draw rotate control points.
+        ctx.beginPath();
+        ctx.strokeStyle = this.store.options.activeColor;
+        ctx.fillStyle = '#ffffff';
+        ctx.arc(
+          this.activeRect.center.x,
+          this.activeRect.y - 30,
+          5,
+          0,
+          Math.PI * 2
+        );
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.restore();
+      }
+  };
+  private renderHoverPoint() {
+    const ctx = this.offscreen.getContext('2d');
+    ctx.save();
+    ctx.translate(0.5, 0.5);
+    if (
+      this.store.hover&& !this.movingPens
+
+    ) {
+
+    const anchors = [...this.store.hover.calculative.worldAnchors];
+    if (this.store.pointAt) {
+      anchors.push(this.store.pointAt);
+    }
+    if (anchors) {
+      ctx.strokeStyle =
+        this.store.hover.anchorColor || this.store.options.anchorColor;
+      ctx.fillStyle =
+        this.store.hover.anchorBackground ||
+        this.store.options.anchorBackground;
+      anchors.forEach((anchor) => {
+        if (anchor === this.store.hoverAnchor) {
+          ctx.save();
+          const hoverAnchorColor =
+            this.store.hover.hoverAnchorColor ||
+            this.store.options.hoverAnchorColor;
+          ctx.strokeStyle = hoverAnchorColor;
+          ctx.fillStyle = hoverAnchorColor;
+        }
+        ctx.beginPath();
+        let size =
+          anchor.radius ||
+          this.store.hover.anchorRadius ||
+          this.store.options.anchorRadius;
+        if (
+          this.store.hover.type &&
+          !anchor.radius &&
+          !this.store.hover.anchorRadius
+        ) {
+          size = 3;
+          if (this.store.hover.calculative.lineWidth > 3) {
+            size = this.store.hover.calculative.lineWidth;
+          }
+        }
+        ctx.arc(anchor.x, anchor.y, size, 0, Math.PI * 2);
+        if (this.store.hover.type && this.store.hoverAnchor === anchor) {
+          ctx.save();
+          ctx.strokeStyle =
+            this.store.hover.activeColor || this.store.options.activeColor;
+          ctx.fillStyle = ctx.strokeStyle;
+        }
+        ctx.fill();
+        ctx.stroke();
+        if (anchor === this.store.hoverAnchor) {
+          ctx.restore();
+        }
+
+        if (this.store.hover.type && this.store.hoverAnchor === anchor) {
+          ctx.restore();
+        }
+        //根父节点
+        if (
+          !this.store.hover.parentId &&
+          this.store.hover.children &&
+          this.store.hover.children.length > 0
+        ) {
+          if (anchor === this.store.hoverAnchor) {
+            ctx.save();
+            ctx.beginPath();
+            ctx.lineWidth = 3;
+            const hoverAnchorColor =
+              this.store.hover.hoverAnchorColor ||
+              this.store.options.hoverAnchorColor;
+            if ((globalThis as any).pSBC) {
+              ctx.strokeStyle = (globalThis as any).pSBC(
+                0.5,
+                hoverAnchorColor
+              );
+            }
+            ctx.arc(anchor.x, anchor.y, size + 1.5, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.restore();
+          }
+        }
+      });
+    }
+  }
   }
 }
 // 打平pen 将所以子孙图元加入同一个列表

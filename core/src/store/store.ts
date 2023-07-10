@@ -12,8 +12,10 @@ export interface Meta2dStore {
     center?:Point
     pointAt?: Point
     dpiRatio?: number;
+    lastHover?:Pen
     historyIndex?:number
     histories?: []
+    activeAnchor?: Point
     active?:Pen[]
     pens?:{
         [key:string]: Pen

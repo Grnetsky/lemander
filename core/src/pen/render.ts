@@ -28,7 +28,26 @@ export function renderPen(ctx: CanvasRenderingContext2D, pen: Pen) {
   const store = pen.calculative.canvas.store;
 
   ctx.beginPath() // 开始路径
+  let fill
+  if (pen.calculative.hover) {
+    console.log(pen,"hover了&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&")
+    ctx.strokeStyle = pen.hoverColor || store.options.hoverColor;
+    fill = pen.hoverBackground || store.options.hoverBackground;
+    ctx.fillStyle = fill;
+  } else if (pen.calculative.active) {
+    console.log(pen,"被激活了")
+    ctx.strokeStyle = pen.activeColor || store.options.activeColor;
+    fill = pen.activeBackground || store.options.activeBackground;
+    ctx.fillStyle = fill;
+  }else {
+    let stroke = pen.calculative.color || getGlobalColor(store);
+    console.log(pen,"无hover",stroke)
+
+    ctx.strokeStyle = stroke;
+
+  }
   ctxDrawPath(true,ctx, pen, store)
+  ctx.closePath()
   ctx.stroke()
   ctxFlip(ctx, pen) //TODO 暂留 不知其作用 暂留  翻转
   if (pen.calculative?.rotate && pen.name !== 'line') {
@@ -55,10 +74,12 @@ export function ctxDrawPath(
       fill && ctx.fill();
       ctx.restore();
     }
-
-    if (pen.calculative.active && !pen.calculative.pencil) {
-      renderLineAnchors(ctx, pen);
+    if(pen.type){
+      if (pen.calculative.active && !pen.calculative.pencil ) {
+        renderLineAnchors(ctx, pen);
+      }
     }
+
   }
 }
 
@@ -223,7 +244,7 @@ export function renderAnchor(
   }
 
   const active = pen.calculative.activeAnchor === pt;
-  let r = 3;
+  let r = 4;
   if (pen.calculative.lineWidth > 3) {
     r = pen.calculative.lineWidth;
   }
@@ -285,7 +306,7 @@ export function renderAnchor(
 
 export function renderLineAnchors(ctx: CanvasRenderingContext2D, pen: Pen) {
   const store = pen.calculative.canvas.store;
-
+  console.log("renderLineAnchors")
   ctx.save();
   ctx.lineWidth = 1;
   ctx.fillStyle = pen.activeColor || store.options.activeColor;

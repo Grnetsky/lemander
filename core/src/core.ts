@@ -32,7 +32,7 @@ export class Meta2d {
   }
 
   private setOptions(opts: Options = {}) {
-    // this.store.options = Object.assign(this.store.options, opts); // 加载设置到数据仓库中
+    this.store.options = Object.assign(this.store.options, opts); // 加载设置到数据仓库中
   }
 
   data(): Meta2dData {
