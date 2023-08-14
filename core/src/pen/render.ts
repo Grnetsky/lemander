@@ -30,18 +30,15 @@ export function renderPen(ctx: CanvasRenderingContext2D, pen: Pen) {
   ctx.beginPath() // 开始路径
   let fill
   if (pen.calculative.hover) {
-    console.log(pen,"hover了&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&")
     ctx.strokeStyle = pen.hoverColor || store.options.hoverColor;
     fill = pen.hoverBackground || store.options.hoverBackground;
     ctx.fillStyle = fill;
   } else if (pen.calculative.active) {
-    console.log(pen,"被激活了")
     ctx.strokeStyle = pen.activeColor || store.options.activeColor;
     fill = pen.activeBackground || store.options.activeBackground;
     ctx.fillStyle = fill;
   }else {
     let stroke = pen.calculative.color || getGlobalColor(store);
-    console.log(pen,"无hover",stroke)
 
     ctx.strokeStyle = stroke;
 

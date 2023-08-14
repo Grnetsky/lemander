@@ -9,3 +9,6 @@ export enum HoverType {
   LineAnchorPrev,
   LineAnchorNext
 }
+
+// 默认画线函数
+export const defaultDrawLineFns = ['curve', 'polyline', 'line'];

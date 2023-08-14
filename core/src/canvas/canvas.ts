@@ -34,8 +34,6 @@ import {LockState} from "../../../../../Desktop/蔡豪/meta2d.js/packages/core/s
 import {getPensDisableRotate, getPensLock} from "../../../../../Desktop/蔡豪/meta2d.js/packages/core/src/pen/render";
 
 export const movingSuffix = '-moving' as const;
-
-
 export class Canvas {
   canvas = document.createElement("canvas") // 创建canvas
   canvasRect: Rect;
@@ -408,7 +406,6 @@ export class Canvas {
     if (hoverType === HoverType.None) {
       hoverType = this.inPens(pt, this.store.data.pens)
     }
-    console.log(hoverType,"hovertype")
     this.hoverType = hoverType
     if (hoverType === HoverType.Node) {
       // 若hoverType == None
@@ -868,7 +865,6 @@ export class Canvas {
 
 
   private inAnchor(pt: Point, pen: Pen, anchor: Point): HoverType {
-    console.log("inAnchor",pen)
     this.store.hoverAnchor = undefined
     this.movingAnchor = undefined
     if (!anchor) {
@@ -891,8 +887,6 @@ export class Canvas {
 
       return HoverType.LineAnchor;
     }
-
-    console.log(this.mouseDown,pen.type)
     if (!this.mouseDown && pen.type) {
       if (
         pen.calculative.active &&
